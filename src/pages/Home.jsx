@@ -43,7 +43,7 @@ export default function Home(){
     {data?.featured?.length?<Hero featured={data.featured}/>:!data&&!error?<HeroSkeleton/>:null}
     {error&&!data&&<div className="content-width home-hero-error"><ErrorPanel message={error} onRetry={load}/></div>}
     <div className="content-width home-main">
-      {data?.demo&&<div className="demo-banner"><ShieldAlert size={18}/><p><strong>Demo catalog mode.</strong> Add a TMDB API token to your <code>.env</code> file to load thousands of searchable movies and TV series.</p><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Get API token <ArrowRight size={14}/></a></div>}
+      {data?.demo&&<div className="demo-banner"><ShieldAlert size={18}/><p><strong>Demo catalog mode.</strong> Configure a TMDB API token in the Worker secrets to load thousands of searchable movies and TV series.</p><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Get API token <ArrowRight size={14}/></a></div>}
       {data?.warning&&<div className="inline-warning">{data.warning}</div>}
       {error&&data&&<ErrorPanel message={error} onRetry={load}/>}
       {data&&<>

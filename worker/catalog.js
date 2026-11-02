@@ -2,10 +2,10 @@ import { seed, seedList, seedFind, movieGenres, tvGenres } from './seed.js';
 
 const API = 'https://api.themoviedb.org/3';
 const cache = new Map();
-const hasToken = () => Boolean(process.env.TMDB_READ_ACCESS_TOKEN || process.env.TMDB_API_KEY);
-const DEFAULT_TIMEOUT = 9500;
+const hasToken = env => Boolean(env?.TMDB_READ_ACCESS_TOKEN || env?.TMDB_API_KEY);
+const DEFAULT_TIMEOUT = 8000;
 
-export function liveCatalog() { return hasToken(); }
+export function liveCatalog(env) { return hasToken(env); }
 export function normalize(item, kind) {
   const type = kind || item.kind || item.media_type || (item.first_air_date || item.name ? 'tv' : 'movie');
   return {
@@ -24,17 +24,21 @@ export function normalize(item, kind) {
   };
 }
 
-async function tmdb(path, params={}) {
-  if (!hasToken()) throw new Error('TMDB token not configured');
+async function tmdb(env, path, params={}) {
+  if (!hasToken(env)) throw new Error('TMDB token not configured');
   const u = new URL(`${API}${path}`);
   for (const [k,v] of Object.entries(params)) if(v !== undefined && v !== null && v !== '') u.searchParams.set(k, String(v));
-  if (process.env.TMDB_API_KEY && !process.env.TMDB_READ_ACCESS_TOKEN) u.searchParams.set('api_key', process.env.TMDB_API_KEY);
+  if (env.TMDB_API_KEY && !env.TMDB_READ_ACCESS_TOKEN) u.searchParams.set('api_key', env.TMDB_API_KEY);
   const cacheKey = u.toString();
   const cached = cache.get(cacheKey);
   if (cached && cached.expire > Date.now()) return cached.data;
   const headers = {Accept: 'application/json'};
-  if (process.env.TMDB_READ_ACCESS_TOKEN) headers.Authorization = `Bearer ${process.env.TMDB_READ_ACCESS_TOKEN}`;
-  const response = await fetch(u, {headers, signal: AbortSignal.timeout(DEFAULT_TIMEOUT)});
+  if (env.TMDB_READ_ACCESS_TOKEN) headers.Authorization = `Bearer ${env.TMDB_READ_ACCESS_TOKEN}`;
+  const response = await fetch(u, {
+    headers,
+    signal: AbortSignal.timeout(DEFAULT_TIMEOUT),
+    cf: {cacheEverything:true,cacheTtlByStatus:{'200-299':600,'400-499':30,'500-599':0}},
+  });
   if (!response.ok) throw new Error(`TMDB returned ${response.status}`);
   const data = await response.json();
   cache.set(cacheKey, {data, expire: Date.now() + 10 * 60 * 1000});
@@ -42,12 +46,12 @@ async function tmdb(path, params={}) {
   return data;
 }
 
-async function list(path, kind, params={}) {
-  const result = await tmdb(path, params);
+async function list(env, path, kind, params={}) {
+  const result = await tmdb(env, path, params);
   return (result.results || []).filter(x => x.poster_path || x.backdrop_path).map(x => normalize(x, kind));
 }
 
-export async function homeData() {
+export async function homeData(env) {
   const fallback = () => {
     const movies = seedList('movie').map(x => normalize(x));
     const tv = seedList('tv').map(x => normalize(x));
@@ -62,12 +66,12 @@ export async function homeData() {
       ]
     };
   };
-  if (!hasToken()) return fallback();
+  if (!hasToken(env)) return fallback();
   try {
     const [trendMovies, trendTv, popular, series, top, now] = await Promise.all([
-      list('/trending/movie/week', 'movie'), list('/trending/tv/week', 'tv'),
-      list('/movie/popular','movie'), list('/tv/popular','tv'),
-      list('/movie/top_rated','movie'), list('/movie/now_playing','movie')
+      list(env, '/trending/movie/week', 'movie'), list(env, '/trending/tv/week', 'tv'),
+      list(env, '/movie/popular','movie'), list(env, '/tv/popular','tv'),
+      list(env, '/movie/top_rated','movie'), list(env, '/movie/now_playing','movie')
     ]);
     return {
       demo:false, featured:[trendMovies[0], popular[0], trendTv[0], now[0], trendMovies[1], series[0]].filter(x=>x && x.backdrop),
@@ -86,18 +90,18 @@ export async function homeData() {
   }
 }
 
-export async function searchData(q, page=1) {
-  if (!q.trim()) return {results:[],page,totalPages:0,demo:!hasToken()};
-  if (!hasToken()) {
+export async function searchData(env, q, page=1) {
+  if (!q.trim()) return {results:[],page,totalPages:0,demo:!hasToken(env)};
+  if (!hasToken(env)) {
     const needle=q.toLowerCase();
     return { results:seed.filter(x=>`${x.title} ${x.overview}`.toLowerCase().includes(needle)).map(x=>normalize(x)), page:1,totalPages:1,demo:true };
   }
-  const result = await tmdb('/search/multi', {query:q.trim(),page,include_adult:false});
+  const result = await tmdb(env, '/search/multi', {query:q.trim(),page,include_adult:false});
   return { results:(result.results||[]).filter(x=>['movie','tv'].includes(x.media_type)).map(x=>normalize(x)),page:result.page,totalPages:Math.min(result.total_pages||1,500),demo:false };
 }
 
-export async function browseData(kind, {page=1,genre='',year='',sort='popularity.desc'}={}) {
-  if (!hasToken()) {
+export async function browseData(env, kind, {page=1,genre='',year='',sort='popularity.desc'}={}) {
+  if (!hasToken(env)) {
     let records=seedList(kind).map(x=>normalize(x));
     if (genre) records=records.filter(x=>x.genres.includes(Number(genre)));
     if (year) records=records.filter(x=>x.year===Number(year));
@@ -109,17 +113,17 @@ export async function browseData(kind, {page=1,genre='',year='',sort='popularity
   if (genre) params.with_genres=genre;
   if (year) params[kind==='tv'?'first_air_date_year':'primary_release_year']=year;
   if (sort==='vote_average.desc') params['vote_count.gte']=200;
-  const raw=await tmdb(`/discover/${kind}`,params);
+  const raw=await tmdb(env, `/discover/${kind}`,params);
   return {results:(raw.results||[]).map(x=>normalize(x,kind)),page:raw.page,totalPages:Math.min(raw.total_pages||1,500),demo:false};
 }
 
-export async function genreData(kind) {
-  if (!hasToken()) return {genres:kind==='tv'?tvGenres:movieGenres};
-  try { return await tmdb(`/genre/${kind}/list`); } catch { return {genres:kind==='tv'?tvGenres:movieGenres}; }
+export async function genreData(env, kind) {
+  if (!hasToken(env)) return {genres:kind==='tv'?tvGenres:movieGenres};
+  try { return await tmdb(env, `/genre/${kind}/list`); } catch { return {genres:kind==='tv'?tvGenres:movieGenres}; }
 }
 
-export async function detailData(kind,id) {
-  if (!hasToken()) {
+export async function detailData(env, kind,id) {
+  if (!hasToken(env)) {
     const x=seedFind(kind,id);
     if (!x) return null;
     const n=normalize(x);
@@ -128,11 +132,11 @@ export async function detailData(kind,id) {
       seasonList:kind==='tv'?Array.from({length:x.seasons||1},(_,i)=>({season_number:i+1,name:`Season ${i+1}`,episode_count:8})):[],
       demo:true, providers:[]};
   }
-  const raw=await tmdb(`/${kind}/${id}`,{append_to_response:'credits,videos,recommendations'});
+  const raw=await tmdb(env, `/${kind}/${id}`,{append_to_response:'credits,videos,recommendations'});
   const n=normalize(raw,kind);
   let providers=[];
   try {
-    const all=await tmdb(`/${kind}/${id}/watch/providers`);
+    const all=await tmdb(env, `/${kind}/${id}/watch/providers`);
     const region=all?.results?.LK || all?.results?.US || null;
     if (region) providers={link:region.link,flatrate:region.flatrate||[],rent:region.rent||[],buy:region.buy||[]};
   } catch { /* optional metadata */ }
@@ -144,12 +148,12 @@ export async function detailData(kind,id) {
     providers, demo:false};
 }
 
-export async function seasonData(id,number) {
-  if (!hasToken()) {
+export async function seasonData(env, id,number) {
+  if (!hasToken(env)) {
     const x=seedFind('tv',id);
     if (!x || number>(x.seasons||1)) return null;
     return {name:`Season ${number}`,season_number:number, episodes:Array.from({length:8},(_,i)=>({id:`${id}_${number}_${i+1}`,episode_number:i+1,name:`Episode ${i+1}`,overview:'Episode information will be available with your TMDB API credentials.',still_path:null,runtime:x.runtime}))};
   }
-  const raw=await tmdb(`/tv/${id}/season/${number}`);
+  const raw=await tmdb(env, `/tv/${id}/season/${number}`);
   return {name:raw.name,season_number:raw.season_number,episodes:(raw.episodes||[]).map(ep=>({id:ep.id,episode_number:ep.episode_number,name:ep.name,overview:ep.overview,still_path:ep.still_path,runtime:ep.runtime,vote_average:ep.vote_average}))};
 }

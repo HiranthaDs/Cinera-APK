@@ -6,3 +6,6 @@ dist
 .audit/
 hich-reference.*
 hich-reference-*.png
+.wrangler/
+.dev.vars*
+!.dev.vars.example

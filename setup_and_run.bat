@@ -7,9 +7,9 @@ if errorlevel 1 (
  pause
  exit /b 1
 )
-if not exist .env (
- copy .env.example .env >nul
- echo Created .env. Add your TMDB_READ_ACCESS_TOKEN for the live movie catalog.
+if not exist .dev.vars (
+ copy .dev.vars.example .dev.vars >nul
+ echo Created .dev.vars. Add your TMDB_READ_ACCESS_TOKEN for the live movie catalog.
 )
 call npm install
 if errorlevel 1 (
@@ -17,6 +17,6 @@ if errorlevel 1 (
  pause
  exit /b 1
 )
-echo Starting Cinera frontend on http://localhost:5173
+echo Starting Cinera on the local Cloudflare Workers runtime at http://localhost:5173
 call npm run dev
 pause

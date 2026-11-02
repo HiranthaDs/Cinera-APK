@@ -1,0 +1,18 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://image.tmdb.org; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; connect-src 'self' https:; media-src 'self' https: blob:; frame-src https://vidy.st https://www.vidy.st https://www.youtube.com https://www.youtube-nocookie.com; manifest-src 'self'; upgrade-insecure-requests
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/favicon.svg
+  Cache-Control: public, max-age=86400
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600

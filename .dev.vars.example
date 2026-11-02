@@ -1,0 +1,9 @@
+# Local Cloudflare Worker secrets. Copy this file to .dev.vars.
+# Get a Read Access Token from https://www.themoviedb.org/settings/api
+TMDB_READ_ACCESS_TOKEN=
+
+# Optional fallback if you use a TMDB API key instead of a Read Access Token.
+TMDB_API_KEY=
+
+# Set to false to disable the external embed source locally.
+ENABLE_VIDY=true

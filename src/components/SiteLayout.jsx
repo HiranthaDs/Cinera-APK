@@ -53,7 +53,7 @@ function SiteHeader(){
   </>;
 }
 
-function Footer(){return <footer className="site-footer"><div className="footer-inner"><div className="footer-kicker"><span>WATCH BETTER</span><span>BUILT FOR EVERY SCREEN</span></div><div className="footer-statement"><h2>YOUR NEXT STORY<br/><em>STARTS HERE.</em></h2><Clapperboard size={80}/></div><div className="footer-links">{links.map(({to,label})=><Link key={to} to={to}>{label}</Link>)}</div><div className="footer-bottom"><span>© {new Date().getFullYear()} Cinera. Independent movie discovery.</span><span>Metadata and artwork by <a target="_blank" rel="noreferrer" href="https://www.themoviedb.org/">TMDB</a>. Playback availability varies by provider.</span></div></div></footer>}
+function Footer(){return <footer className="site-footer"><div className="footer-inner"><div className="footer-kicker"><span>WATCH BETTER</span><span>BUILT FOR EVERY SCREEN</span></div><div className="footer-statement"><h2>YOUR NEXT STORY<br/><em>STARTS HERE.</em></h2><Clapperboard size={80}/></div><div className="footer-links">{links.map(({to,label})=><Link key={to} to={to}>{label}</Link>)}</div><div className="footer-bottom"><span>© {new Date().getFullYear()} Cinera. Independent movie discovery.</span></div></div></footer>}
 
 export default function SiteLayout({children}){
   const location=useLocation();
