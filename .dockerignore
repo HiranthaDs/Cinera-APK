@@ -1,0 +1,8 @@
+node_modules
+.env
+dist
+.git
+*.zip
+.audit
+hich-reference.*
+hich-reference-*.png
