@@ -1,3 +1,6 @@
+// Only add HTTPS MP4 or HLS URLs that you own or are licensed to stream.
+// Third-party iframe players are intentionally unsupported because their
+// advertisements and pop-ups cannot be controlled by this application.
 export const playbackSources={
   'movie:10378':[
     {

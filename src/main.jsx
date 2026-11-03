@@ -3,6 +3,8 @@ import {createRoot} from 'react-dom/client';
 import {BrowserRouter,Routes,Route} from 'react-router-dom';
 import SiteLayout from './components/SiteLayout';
 import {StoreProvider} from './lib/store';
+import {initializePwa,registerServiceWorker} from './lib/pwa';
+import {initializeTvNavigation} from './lib/tvNavigation';
 import './styles.css';
 import './hich-theme.css';
 
@@ -26,4 +28,7 @@ function App(){return <StoreProvider><BrowserRouter><SiteLayout><Suspense fallba
   <Route path="/watchlist" element={<Watchlist/>}/>
   <Route path="*" element={<NotFound/>}/>
 </Routes></Suspense></SiteLayout></BrowserRouter></StoreProvider>;}
+initializePwa();
+registerServiceWorker();
+initializeTvNavigation();
 createRoot(document.getElementById('root')).render(<App/>);

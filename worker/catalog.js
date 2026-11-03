@@ -100,11 +100,13 @@ export async function searchData(env, q, page=1) {
   return { results:(result.results||[]).filter(x=>['movie','tv'].includes(x.media_type)).map(x=>normalize(x)),page:result.page,totalPages:Math.min(result.total_pages||1,500),demo:false };
 }
 
-export async function browseData(env, kind, {page=1,genre='',year='',sort='popularity.desc'}={}) {
+export async function browseData(env, kind, {page=1,genre='',year='',period='',rating='',sort='popularity.desc'}={}) {
   if (!hasToken(env)) {
     let records=seedList(kind).map(x=>normalize(x));
     if (genre) records=records.filter(x=>x.genres.includes(Number(genre)));
     if (year) records=records.filter(x=>x.year===Number(year));
+    if (period) records=records.filter(x=>period==='classic'?(x.year||0)<1990:(x.year||0)>=Number(period.slice(0,4))&&(x.year||0)<Number(period.slice(0,4))+10);
+    if (rating) records=records.filter(x=>x.rating>=Number(rating));
     if (sort==='vote_average.desc') records.sort((a,b)=>b.rating-a.rating);
     else if (sort.includes('date')) records.sort((a,b)=>(b.year||0)-(a.year||0));
     return {results:records,page:1,totalPages:1,demo:true};
@@ -112,6 +114,19 @@ export async function browseData(env, kind, {page=1,genre='',year='',sort='popul
   const params={page,sort_by:sort,include_adult:false};
   if (genre) params.with_genres=genre;
   if (year) params[kind==='tv'?'first_air_date_year':'primary_release_year']=year;
+  if (period) {
+    const dateField=kind==='tv'?'first_air_date':'primary_release_date';
+    if(period==='classic')params[`${dateField}.lte`]='1989-12-31';
+    else {
+      const start=Number(period.slice(0,4));
+      params[`${dateField}.gte`]=`${start}-01-01`;
+      params[`${dateField}.lte`]=`${start+9}-12-31`;
+    }
+  }
+  if (rating) {
+    params['vote_average.gte']=rating;
+    params['vote_count.gte']=100;
+  }
   if (sort==='vote_average.desc') params['vote_count.gte']=200;
   const raw=await tmdb(env, `/discover/${kind}`,params);
   return {results:(raw.results||[]).map(x=>normalize(x,kind)),page:raw.page,totalPages:Math.min(raw.total_pages||1,500),demo:false};

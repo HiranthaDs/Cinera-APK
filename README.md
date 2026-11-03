@@ -26,9 +26,9 @@ A responsive, full-stack movie discovery portal inspired by the **layout pattern
 - Movies and TV series discover pages with genre, release year, sorting and pagination
 - Search titles, including movie and series results
 - Detailed movie pages and TV seasons / episodes
-- Watch page with multiple selectable source types (`iframe`, `video`, `hls`)
-- Supports the publicly documented **Vidy embed API**, using TMDB IDs and season/episode selectors. Vidy is independent, with unverified title coverage and licensing.
-- Add your own **licensed** MP4/HLS/iframe sources in `worker/sources.js`
+- Ad-free first-party player with selectable direct MP4 and HLS sources
+- No third-party movie iframe, pop-up player, or betting-ad provider
+- Add your own **licensed** MP4/HLS sources in `worker/sources.js`
 - Cloudflare Worker API, edge-cached catalog responses and globally distributed static assets
 - SPA route fallback, security headers and Cloudflare Workers observability
 - Watchlist, recent titles and playback progress stored in browser localStorage, no login needed
@@ -65,25 +65,19 @@ Create an API Read Access Token at <https://www.themoviedb.org/settings/api> and
 
 ```env
 TMDB_READ_ACCESS_TOKEN=your_token_here
-ENABLE_VIDY=true
 ```
 
 For Cloudflare production, store `TMDB_READ_ACCESS_TOKEN` as a Worker secret in **Settings → Variables and Secrets**. Never add it to `wrangler.jsonc` or frontend code. With no token, the Worker safely serves a small sample catalog.
 
 For TMDB commercial use, review TMDB's terms. TMDB supplies **metadata and artwork**, **not video streaming rights or complete video files**.
 
-## Playback providers
+## Ad-free playback
 
-### Documented third-party embed
+Cinera does not load an external movie iframe. This prevents the 1xBet overlays, pop-ups, and redirects that came from the former third-party player. The in-app player accepts only direct HTTPS MP4 and HLS sources that you control or are licensed to use.
 
-Vidy publishes these routes:
+For catalog titles without a configured direct source, the watch page shows regional legal-provider options from TMDB and an official trailer when available. Catalog metadata does not include full movie files.
 
-- `https://vidy.st/movie/{tmdbId}`
-- `https://vidy.st/tv/{tmdbId}/{season}/{episode}`
-
-The Worker creates the embed from numeric IDs using the documented `allow="encrypted-media; autoplay *; fullscreen *"` iframe permissions. Configure `ENABLE_VIDY=false` to disable it. Cinera does not scrape HydraHD, intercept protected streams, bypass paywalls/DRM, or promise that a given provider can play every movie. **Verify that you have rights to show content in your jurisdiction before public deployment.**
-
-### Self-hosted / licensed streams
+### Self-hosted or licensed streams
 
 Edit `worker/sources.js`:
 
@@ -112,7 +106,7 @@ Note: the example TV entry above is illustrative; you must **have rights** to st
 
 A playable Big Buck Bunny sample is included for testing. The sample is openly licensed; attribution to Blender Foundation.
 
-If a video server blocks cross-origin requests or framing, fix its allowed origin/CORS/iframe headers **on the server that you control**; the Cinera frontend cannot bypass these protections.
+If a video server blocks cross-origin requests, fix its CORS headers **on the server that you control**; the Cinera frontend cannot bypass these protections.
 
 ## API routes
 
@@ -133,10 +127,9 @@ If a video server blocks cross-origin requests or framing, fix its allowed origi
 ```bash
 npx wrangler login
 npm run deploy
-npx wrangler secret put TMDB_READ_ACCESS_TOKEN
 ```
 
-The first deployment creates `cinera-movie-site` on your `workers.dev` subdomain. The secret command stores the TMDB token encrypted and deploys a new Worker version. Add a production custom domain under **Workers & Pages → cinera-movie-site → Settings → Domains & Routes**.
+`npm run deploy` builds the app and uploads values from the ignored local `.env` file as encrypted Worker secrets. The configured Worker name is `cinera-by-hich`, matching the current production URL. Add a production custom domain under **Workers & Pages → cinera-by-hich → Settings → Domains & Routes**.
 
 ### Automatic GitHub deployments
 
@@ -146,7 +139,7 @@ Connect this repository under **Cloudflare Workers & Pages → Create → Import
 - Build command: `npm run build`
 - Deploy command: `npx wrangler deploy`
 
-Add `TMDB_READ_ACCESS_TOKEN` as a **runtime secret** in the Worker's Variables and Secrets settings. `ENABLE_VIDY` defaults to `true` in `wrangler.jsonc` and can be overridden there or in the dashboard.
+Add `TMDB_READ_ACCESS_TOKEN` as a **runtime secret** in the Worker's Variables and Secrets settings. Never configure a third-party iframe player if you want the ad-free playback guarantee.
 
 ### Validation
 
@@ -159,7 +152,7 @@ This checks the Worker source, runs deterministic API tests, builds the optimize
 ## Notes and limitations
 
 - Movie catalog ≠ movie files. TMDB provides metadata only.
-- Vidy is a separate external site. Its playback availability, uptime, advertising, safety and content licensing are not independently verified.
-- Watch progress from third-party iframes works only if they send compatible messages from their documented origin. It is saved locally on the client.
+- Only explicitly configured direct MP4/HLS sources play inside Cinera. You are responsible for the hosting rights and availability of those media files.
+- Watch progress is saved locally for direct sources.
 - Saved lists are per browser/device (no cloud login).
 - Do not use copyrighted logo artwork or pretend to be affiliated with HydraHD or TMDB.

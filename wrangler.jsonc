@@ -1,15 +1,12 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "cinera-movie-site",
+  "name": "cinera-by-hich",
   "compatibility_date": "2026-11-02",
   "main": "./worker/index.js",
   "upload_source_maps": true,
   "assets": {
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
-  },
-  "vars": {
-    "ENABLE_VIDY": "true"
   },
   "observability": {
     "enabled": true,

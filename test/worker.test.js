@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
 
-const request=(path,options)=>worker.fetch(new Request(`https://cinera.test${path}`,options),{ENABLE_VIDY:'false'});
+const request=(path,options)=>worker.fetch(new Request(`https://cinera.test${path}`,options),{});
 
 test('health reports the Cloudflare runtime and sample fallback',async()=>{
   const response=await request('/api/health');
@@ -13,6 +13,7 @@ test('health reports the Cloudflare runtime and sample fallback',async()=>{
     runtime:'cloudflare-workers',
     catalog:'sample',
     externalEmbed:false,
+    playback:'licensed-direct',
   });
 });
 
@@ -29,6 +30,12 @@ test('home and catalog routes work without external credentials',async()=>{
   assert.equal(browseResponse.status,200);
   assert.equal(browse.demo,true);
   assert.ok(browse.results.length>0);
+
+  const filteredResponse=await request('/api/browse/movie?period=2010s&rating=8&sort=vote_average.desc');
+  const filtered=await filteredResponse.json();
+  assert.equal(filteredResponse.status,200);
+  assert.ok(filtered.results.length>0);
+  assert.ok(filtered.results.every(item=>item.year>=2010&&item.year<=2019&&item.rating>=8));
 });
 
 test('detail, season and source routes validate and normalize data',async()=>{
@@ -47,6 +54,12 @@ test('detail, season and source routes validate and normalize data',async()=>{
   assert.equal(sourceResponse.status,200);
   assert.equal(sourceData.sources.length,1);
   assert.equal(sourceData.sources[0].id,'open-movie-demo');
+  assert.equal(sourceData.sources[0].delivery,'direct');
+
+  const unlicensedResponse=await request('/api/sources/movie/27205');
+  const unlicensedData=await unlicensedResponse.json();
+  assert.equal(unlicensedResponse.status,200);
+  assert.deepEqual(unlicensedData.sources,[]);
 });
 
 test('invalid routes and methods return controlled JSON errors',async()=>{
