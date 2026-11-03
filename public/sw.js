@@ -1,4 +1,4 @@
-const VERSION='cinera-v3-remote';
+const VERSION='cinera-v4-trackpad-remote';
 const SHELL_CACHE=`${VERSION}-shell`;
 const DATA_CACHE=`${VERSION}-data`;
 const APP_SHELL=[

@@ -1,167 +1,264 @@
-# CINERA — cinematic movie / TV catalog + player
+<div align="center">
+  <img src="public/favicon.svg" alt="Cinera logo" width="68" height="68">
+  <h1>CINERA</h1>
+  <p><strong>A cinematic movie and TV experience for phones, browsers, and Android TV.</strong></p>
+  <p>Discover a title, choose a playback source, and control the room from your phone.</p>
 
-A responsive, full-stack movie discovery portal inspired by the **layout patterns** of popular dark streaming sites. Independent branding; not an official HydraHD product.
+  <p>
+    <a href="https://cinera-by-hich.hiranthadiass4.workers.dev/"><strong>Open the live app</strong></a>
+    ·
+    <a href="#quick-start">Run locally</a>
+    ·
+    <a href="#phone-remote">Phone remote</a>
+    ·
+    <a href="#deployment">Deploy</a>
+  </p>
 
-## Screenshots
-
-### Home
-
-![Cinera home page](docs/screenshots/home-desktop.png)
-
-### Movie catalog
-
-![Cinera movie catalog](docs/screenshots/movies-desktop.png)
-
-### Mobile
+  <p>
+    <img src="https://img.shields.io/badge/React-18-20232a?logo=react&logoColor=61dafb" alt="React 18">
+    <img src="https://img.shields.io/badge/Cloudflare-Workers-f38020?logo=cloudflare&logoColor=white" alt="Cloudflare Workers">
+    <img src="https://img.shields.io/badge/Android_TV-optimized-3ddc84?logo=android&logoColor=white" alt="Android TV optimized">
+    <img src="https://img.shields.io/badge/PWA-installable-ff3454" alt="Installable PWA">
+    <img src="https://img.shields.io/badge/tests-15_passing-13c99a" alt="15 tests passing">
+  </p>
+</div>
 
 <p align="center">
-  <img src="docs/screenshots/home-mobile.png" alt="Cinera mobile home page" width="390">
+  <img src="docs/screenshots/home-desktop.png" alt="Cinera cinematic home page" width="100%">
 </p>
 
-## Features
+## The experience
 
-- Responsive cinematic landing page with featured hero slides
-- Movies, TV, trending, top rated and popular sections
-- TMDB-powered catalog, titles, ratings, artwork, cast, trailers and recommendations
-- Movies and TV series discover pages with genre, release year, sorting and pagination
-- Search titles, including movie and series results
-- Detailed movie pages and TV seasons / episodes
-- First-party player for selectable direct MP4 and HLS sources
-- Optional Vidy iframe fallback with the permissions required by its external player
-- Add your own **licensed** MP4/HLS sources in `worker/sources.js`
-- Cloudflare Worker API, edge-cached catalog responses and globally distributed static assets
-- SPA route fallback, security headers and Cloudflare Workers observability
-- Watchlist, recent titles and playback progress stored in browser localStorage, no login needed
-- QR phone remote with live D-pad, navigation, playback, volume and fullscreen controls
-- Voice search and a random “Surprise me” discovery action
-- Sleep timer, Picture-in-Picture, Data Saver and autoplay-next preferences
-- Start Over, native sharing, keyboard shortcut guide and editable watch history
-- TMDB viewing-provider links where available
-- Fallback demo catalog when TMDB credentials are not configured
+Cinera is a full-stack streaming portal focused on a clean ten-foot experience. The interface adapts from touch phones to desktop browsers and remote-controlled TV screens without splitting the product into separate apps.
 
-## Requirements
+| Discover | Watch | Control | Continue |
+| --- | --- | --- | --- |
+| Search, filters, moods, trending rows, cast, trailers, and recommendations. | Select licensed MP4/HLS sources or an optional external fallback. | Pair a phone by QR and use a trackpad, TV pointer, keyboard, and playback controls. | Keep a watchlist, history, preferences, and playback progress locally without an account. |
 
-Node.js **20.19+** (Node 22 recommended) and npm.
+## A remote built for the sofa
 
-## Start locally
+<table>
+  <tr>
+    <td width="62%">
+      <img src="docs/screenshots/pair-tv.png" alt="Cinera QR phone pairing screen on Android TV" width="100%">
+    </td>
+    <td width="38%" valign="top">
+      <h3>One QR. One private session.</h3>
+      <p>The TV creates a temporary pairing code. The phone joins the same Cloudflare Durable Object session and exchanges live commands and screen state over WebSockets.</p>
+      <p><strong>No account, Bluetooth, or shared Wi-Fi discovery is required.</strong></p>
+    </td>
+  </tr>
+</table>
+
+<a id="phone-remote"></a>
+<table>
+  <tr>
+    <td width="35%" align="center">
+      <img src="docs/screenshots/remote-mobile.png" alt="Cinera Apple TV style mobile remote" width="300">
+    </td>
+    <td width="65%" valign="top">
+      <h3>Phone remote</h3>
+      <p>A restrained, Apple-TV-inspired controller designed for one-handed use.</p>
+      <ul>
+        <li><strong>Pointer mode</strong> moves a visible cursor and highlights selectable TV elements.</li>
+        <li><strong>Focus mode</strong> turns directional swipes into accelerated TV navigation.</li>
+        <li>Tap selects, double-tap toggles playback, long-press confirms, and the edge rail scrolls.</li>
+        <li>The synchronized keyboard opens automatically when a TV text field receives focus.</li>
+        <li>Playback, volume, mute, fullscreen, restart, menu, and section shortcuts remain one tap away.</li>
+        <li>Supported browsers receive lightweight haptic feedback for movement and actions.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+> The Remote entry is shown only on confirmed TV devices. It remains hidden on phones, tablets, and desktop browsers, including large landscape touch screens.
+
+## Catalog, without the clutter
+
+<p align="center">
+  <img src="docs/screenshots/movies-desktop.png" alt="Cinera movie catalog with filters" width="100%">
+</p>
+
+The catalog uses TMDB metadata for discovery while keeping playback providers separate. Movies and series can be filtered by genre, year, period, rating, and popularity. Search includes live suggestions, recent terms, voice input where available, and full result pages.
+
+## Feature map
+
+| Area | Included |
+| --- | --- |
+| Home | Featured stories, editorial rows, continue watching, Surprise Me |
+| Discovery | Movies, series, genres, years, ratings, sorting, pagination |
+| Search | Live suggestions, voice search, recent searches, mixed title results |
+| Details | Metadata, cast, seasons, episodes, trailers, recommendations, provider links |
+| Playback | MP4, HLS, iframe sources, server failover, resume progress, Data Saver |
+| Player tools | Start Over, sleep timer, Picture-in-Picture, autoplay next, sharing, shortcuts |
+| Personal | Watchlist, editable history, playback progress, local preferences |
+| TV | Compact ten-foot layout, spatial focus navigation, legacy Android remote keys |
+| Phone remote | QR pairing, trackpad, cursor, focus gestures, keyboard, haptics, playback controls |
+| PWA | Installable manifest, offline shell, cache rotation, mobile home-screen support |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Phone[Phone remote] <-->|commands + live state| Session["RemoteSession<br/>Durable Object"]
+  Session <-->|screen channel| Screen[TV / browser]
+  Screen --> Worker[Cloudflare Worker API]
+  Worker --> TMDB[TMDB metadata]
+  Worker --> Sources["Licensed MP4 / HLS<br/>optional external embed"]
+  Screen --> Local[("Watchlist, history,<br/>progress and preferences")]
+```
+
+| Layer | Technology | Responsibility |
+| --- | --- | --- |
+| Interface | React 18, React Router, Lucide | Responsive UI, routes, search, watch and remote experiences |
+| Playback | Native video, HLS.js, iframe integration | Direct streams, adaptive HLS, external fallback |
+| Edge API | Cloudflare Workers | Catalog normalization, source selection, caching, security headers |
+| Remote relay | Durable Objects WebSockets | Isolated screen/phone sessions, presence and command relay |
+| Data | TMDB API plus local sample catalog | Metadata, art, seasons, discovery and credential-free fallback |
+| Client storage | `localStorage` and `sessionStorage` | Watch state and short-lived remote pairing tokens |
+
+## Quick start
+
+### Requirements
+
+- Node.js 20.19 or newer; Node.js 22 is recommended
+- npm
+- Optional TMDB API Read Access Token for the full catalog
+
+### macOS / Linux
 
 ```bash
 npm install
 cp .dev.vars.example .dev.vars
-# Edit .dev.vars — fill TMDB_READ_ACCESS_TOKEN for the full catalog.
 npm run dev
 ```
 
-Open **http://localhost:5173**. On Windows PowerShell use `Copy-Item .dev.vars.example .dev.vars` instead of `cp`.
+### Windows PowerShell
 
-### Production preview
-
-```bash
-npm run build
-npm run preview
+```powershell
+npm install
+Copy-Item .dev.vars.example .dev.vars
+npm run dev
 ```
 
-The preview uses Cloudflare's local Workers runtime and serves the SPA and API together at **http://localhost:4173**.
+Open <http://localhost:5173>. Without TMDB credentials, Cinera starts with a safe sample catalog so the complete interface remains testable.
 
-## TMDB API
-
-Create an API Read Access Token at <https://www.themoviedb.org/settings/api> and add it to `.dev.vars` for local development:
+### Local environment
 
 ```env
 TMDB_READ_ACCESS_TOKEN=your_token_here
 ENABLE_VIDY=true
 ```
 
-For Cloudflare production, store `TMDB_READ_ACCESS_TOKEN` as a Worker secret in **Settings → Variables and Secrets**. Never add it to `wrangler.jsonc` or frontend code. With no token, the Worker safely serves a small sample catalog.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `TMDB_READ_ACCESS_TOKEN` | No | Enables the complete TMDB catalog; sample data is used when absent |
+| `ENABLE_VIDY` | No | Enables or disables the optional external iframe fallback |
 
-For TMDB commercial use, review TMDB's terms. TMDB supplies **metadata and artwork**, **not video streaming rights or complete video files**.
+Never commit `.env`, `.dev.vars`, API tokens, or account credentials.
 
-## Playback providers
+## Playback sources
 
-When `ENABLE_VIDY=true`, Cinera adds Vidy as an external iframe fallback for movies and individual TV episodes. Vidy does not function inside a restricted iframe sandbox, so the embed is loaded without a `sandbox` attribute. Vidy controls the content and browser actions initiated inside its frame, including advertising, pop-ups, availability, and licensing; Cinera cannot remove or verify those elements.
-
-Direct HTTPS MP4/HLS sources configured in `worker/sources.js` are preferred over Vidy. For titles without any available source, the watch page shows regional legal-provider options from TMDB and an official trailer when available. TMDB catalog metadata does not include full movie files.
-
-### Self-hosted or licensed streams
-
-Edit `worker/sources.js`:
+Direct HTTPS MP4 and HLS sources in `worker/sources.js` are preferred. Configure only media you are authorized to distribute.
 
 ```js
 export const playbackSources = {
   'movie:10378': [
     {
       id: 'licensed-file-1',
-      label: 'My MP4 server',
+      label: 'Primary CDN',
       type: 'video',
-      url: 'https://your-cdn.example.com/authorized-film.mp4',
-    }
+      url: 'https://cdn.example.com/authorized-film.mp4',
+    },
   ],
-  'tv:1396': [
+  'tv:1396:1:1': [
     {
-      id: 'your-licensed-tv-source',
-      label: 'My streaming provider',
+      id: 'licensed-episode-1',
+      label: 'Adaptive HLS',
       type: 'hls',
-      url: 'https://your-cdn.example.com/playlist.m3u8',
-    }
-  ]
+      url: 'https://cdn.example.com/season-1/episode-1/master.m3u8',
+    },
+  ],
 };
 ```
 
-Note: the example TV entry above is illustrative; you must **have rights** to stream the title. For TV sources that differ by episode, use keys such as `tv:1396:1:1` (TMDB ID, season, episode). These episode-specific sources are combined with any generic `tv:1396` sources. Do not accidentally use a single TV playlist for every episode.
+Episode-specific keys use `tv:{tmdbId}:{season}:{episode}`. Generic `tv:{tmdbId}` sources can be used only when the same authorized stream is intentionally shared across episodes.
 
-A playable Big Buck Bunny sample is included for testing. The sample is openly licensed; attribution to Blender Foundation.
+The included Big Buck Bunny source is an openly licensed playback sample. If your own server blocks cross-origin requests, configure CORS or framing permissions on that server; the frontend does not bypass them.
 
-If a video server blocks cross-origin requests, fix its CORS headers **on the server that you control**; the Cinera frontend cannot bypass these protections.
+## API reference
 
-## API routes
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/health` | Runtime and catalog health |
+| `GET` | `/api/home` | Featured titles and home rows |
+| `GET` | `/api/search?q=...&page=1` | Mixed movie and series search |
+| `GET` | `/api/genres/:kind` | Genre catalog for `movie` or `tv` |
+| `GET` | `/api/browse/:kind` | Filtered and paginated discovery |
+| `GET` | `/api/title/:kind/:id` | Normalized title details |
+| `GET` | `/api/season/{id}/{season}` | TV season and episode data |
+| `GET` | `/api/sources/:kind/:id` | Direct and external playback choices |
+| `WS` | `/api/remote/socket` | Private relay using `pair` and `role` parameters |
 
-- `GET /api/health`
-- `GET /api/home`
-- `GET /api/search?q=...&page=1`
-- `GET /api/genres/movie` / `GET /api/genres/tv`
-- `GET /api/browse/movie?page=1&sort=popularity.desc&genre=28&year=2024`
-- `GET /api/title/movie/157336`
-- `GET /api/season/1396/1`
-- `GET /api/sources/movie/157336`
-- `GET /api/sources/tv/1396?season=1&episode=1`
-- `GET /api/remote/socket?pair=...&role=screen|remote` (WebSocket upgrade)
+## Project structure
 
-## Deploy to Cloudflare Workers
+```text
+cinera_app/
+├── public/                 PWA assets, security headers and service worker
+├── src/
+│   ├── components/         Search, player, cards, layout and watch tools
+│   ├── lib/                API, state, PWA, TV navigation and remote logic
+│   └── pages/              Home, browse, details, watch, pairing and remote
+├── test/                   Worker, player, TV and gesture tests
+├── worker/
+│   ├── catalog.js          TMDB and sample catalog normalization
+│   ├── sources.js          Authorized playback source configuration
+│   └── index.js            API routes and Durable Object relay
+├── wrangler.jsonc          Worker, assets and Durable Object configuration
+└── vite.config.js          React and Cloudflare build integration
+```
 
-### Wrangler CLI
+## Validation
+
+```bash
+npm run validate
+```
+
+The validation pipeline checks Worker syntax, runs deterministic tests, builds the production client and Worker bundles, validates asset routing, and performs a Wrangler deployment dry-run.
+
+Current suite: **15 passing tests** covering API behavior, source failover, Android TV detection, legacy remote keys, gesture classification, acceleration, pointer clamping, and remote route validation.
+
+## Deployment
+
+### Wrangler
 
 ```bash
 npx wrangler login
 npm run deploy
 ```
 
-`npm run deploy` builds the app and uploads values from the ignored local `.env` file as encrypted Worker secrets. The configured Worker name is `cinera-by-hich`, matching the current production URL. Add a production custom domain under **Workers & Pages → cinera-by-hich → Settings → Domains & Routes**.
+The deployment creates or updates the `cinera-by-hich` Worker. The QR remote uses the `RemoteSession` SQLite-backed Durable Object declared in `wrangler.jsonc`; Wrangler applies its initial migration during deployment.
 
-The QR remote uses the configured `RemoteSession` SQLite-backed Durable Object. Its binding and first migration are already declared in `wrangler.jsonc`; Wrangler creates the namespace on the first deployment.
+Store `TMDB_READ_ACCESS_TOKEN` in **Workers & Pages → Settings → Variables and Secrets**. The ignored local `.env` file may be used by the provided deploy script, but it must never be added to Git.
 
-### Automatic GitHub deployments
+### Git-connected deployment
 
-Connect this repository under **Cloudflare Workers & Pages → Create → Import a repository**, then use:
+| Setting | Value |
+| --- | --- |
+| Production branch | `main` |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
 
-- Production branch: `main`
-- Build command: `npm run build`
-- Deploy command: `npx wrangler deploy`
+## Responsible use
 
-Add `TMDB_READ_ACCESS_TOKEN` as a **runtime secret** in the Worker's Variables and Secrets settings. Set `ENABLE_VIDY=false` to deploy without the external fallback.
+- TMDB provides metadata and artwork, not movie files or streaming rights.
+- Vidy, when enabled, is an independent external provider. Its availability, advertising, safety, and licensing are outside Cinera's control.
+- You are responsible for the rights and availability of every configured playback source.
+- Saved lists and progress are browser-local; Cinera does not currently provide user accounts or cloud sync.
+- Cinera is independently branded and is not affiliated with TMDB, Vidy, HydraHD, Apple, or any streaming platform.
 
-### Validation
+---
 
-```bash
-npm run validate
-```
-
-This checks the Worker source, runs deterministic API tests, builds the optimized client and Worker bundles, validates static asset routing, and performs a Wrangler dry-run without deploying.
-
-## Notes and limitations
-
-- Movie catalog ≠ movie files. TMDB provides metadata only.
-- Vidy is an independent external provider. Its playback availability, advertising, and content licensing are outside Cinera's control.
-- You are responsible for the rights and availability of configured media sources.
-- Watch progress is saved locally when the selected player reports it.
-- Saved lists are per browser/device (no cloud login).
-- Do not use copyrighted logo artwork or pretend to be affiliated with HydraHD or TMDB.
+<p align="center">
+  Built by <strong>Hich Web</strong> for movie nights on every screen.
+</p>

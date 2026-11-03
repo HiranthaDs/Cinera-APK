@@ -20,8 +20,10 @@ export const normalizeRemoteKey=event=>{
   return REMOTE_KEYS[event?.keyCode||event?.which]||'';
 };
 
+export const detectTvIdentity=({userAgent='',tvQuery=false}={})=>tvQuery||TV_USER_AGENT.test(userAgent);
+
 export const detectTvDevice=({userAgent='',width=0,height=0,coarse=false,tvQuery=false}={})=>{
-  if(tvQuery||TV_USER_AGENT.test(userAgent))return true;
+  if(detectTvIdentity({userAgent,tvQuery}))return true;
   return coarse&&width>=800&&width>height*1.35;
 };
 
@@ -42,8 +44,10 @@ export function initializeTvNavigation(){
   const applyTvClass=()=>{
     const tvQuery=new URLSearchParams(window.location.search).get('tv')==='1';
     const coarse=window.matchMedia?.('(hover: none) and (pointer: coarse)').matches||false;
+    const tvIdentity=detectTvIdentity({userAgent:navigator.userAgent,tvQuery});
     const isTv=detectTvDevice({userAgent:navigator.userAgent,width:window.innerWidth,height:window.innerHeight,coarse,tvQuery});
     document.documentElement.classList.toggle('tv-ui',isTv);
+    document.documentElement.classList.toggle('tv-device',tvIdentity);
   };
   applyTvClass();
   window.addEventListener('resize',applyTvClass,{passive:true});

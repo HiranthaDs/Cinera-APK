@@ -23,7 +23,7 @@ export default function WatchTools({item,sourceType,dataSaver,onDataSaver,autoNe
     <section className="watch-tools" aria-label="Playback tools">
       <div className="watch-tools-heading"><span>QUICK TOOLS</span><strong>Make movie night yours</strong></div>
       <div className="watch-tools-grid">
-        <Link to="/pair"><Gamepad2/><span><strong>Phone remote</strong><small>Scan to control the TV</small></span></Link>
+        <Link to="/pair" className="tv-only-remote-tool"><Gamepad2/><span><strong>Phone remote</strong><small>Scan to control the TV</small></span></Link>
         <label className={sleepMinutes?'is-active':''}><Clock3/><span><strong>Sleep timer</strong><small>{!directPlayer?'Direct video only':sleepMinutes?`${sleepMinutes} minutes`:'Turn off later'}</small></span><select aria-label="Set sleep timer" disabled={!directPlayer} value={sleepMinutes} onChange={event=>setSleepMinutes(Number(event.target.value))}><option value="0">Off</option><option value="15">15m</option><option value="30">30m</option><option value="45">45m</option><option value="60">60m</option></select></label>
         <button type="button" onClick={pip} disabled={!directPlayer}><PictureInPicture/><span><strong>Picture-in-Picture</strong><small>{!directPlayer?'Direct video only':'Keep watching anywhere'}</small></span></button>
         <button type="button" className={dataSaver?'is-active':''} aria-pressed={dataSaver} onClick={()=>onDataSaver(!dataSaver)}><Gauge/><span><strong>Data Saver</strong><small>{dataSaver?'Lower bandwidth on':'Adaptive quality'}</small></span>{dataSaver&&<Check/>}</button>

@@ -22,7 +22,7 @@ export default function PairRemote(){
   return <div className="pair-page content-width">
     <Link to="/" className="back-link"><ArrowLeft size={16}/> Back to Cinera</Link>
     <div className="pair-layout">
-      <section className="pair-copy"><span className="eyebrow"><Gamepad2/> CINERA PHONE REMOTE</span><h1>Your phone is the remote<span>.</span></h1><p>Scan once, then control navigation and playback from the sofa. The connection is private to this one-time pairing session.</p>
+      <section className="pair-copy"><span className="eyebrow"><Gamepad2/> CINERA PHONE REMOTE</span><h1>Your phone is the remote<span>.</span></h1><p>Scan once, then use the precision trackpad, visible TV pointer, synchronized keyboard and playback controls from the sofa. The connection is private to this one-time pairing session.</p>
         <ol><li><b>1</b><span>Open your phone camera</span></li><li><b>2</b><span>Scan the QR code</span></li><li><b>3</b><span>Open the link and start controlling</span></li></ol>
         <div className={`pair-status ${remoteConnected?'is-connected':''}`}>{remoteConnected?<CheckCircle2/>:<Wifi/>}<span><small>PAIRING STATUS</small><strong>{label}</strong></span></div>
       </section>
