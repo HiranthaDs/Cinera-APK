@@ -7,6 +7,7 @@ import {initializePwa,registerServiceWorker} from './lib/pwa';
 import {initializeTvNavigation} from './lib/tvNavigation';
 import './styles.css';
 import './hich-theme.css';
+import './device.css';
 
 const Home=lazy(()=>import('./pages/Home'));
 const Browse=lazy(()=>import('./pages/Browse'));
@@ -17,6 +18,15 @@ const Watchlist=lazy(()=>import('./pages/Watchlist'));
 
 function PageLoader(){return <div className="route-loader" role="status"><span/><strong>Loading your next story…</strong></div>;}
 function NotFound(){return <div className="content-width not-found"><h1>404</h1><p>The page you're looking for doesn't exist.</p><a className="button button-primary" href="/">Back to home</a></div>;}
+class AppErrorBoundary extends React.Component{
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(error){return {error};}
+  componentDidCatch(error,info){console.error('[app] Unhandled interface error',error,info);}
+  render(){
+    if(!this.state.error)return this.props.children;
+    return <main className="app-crash" role="alert"><div><span>CINERA RECOVERY</span><h1>Something interrupted the app.</h1><p>Your saved list and watch progress are safe on this device. Reload Cinera to reconnect.</p><div><button className="button button-primary" onClick={()=>window.location.reload()}>Reload app</button><a className="button button-outline" href="/">Go home</a></div></div></main>;
+  }
+}
 function App(){return <StoreProvider><BrowserRouter><SiteLayout><Suspense fallback={<PageLoader/>}><Routes>
   <Route path="/" element={<Home/>}/>
   <Route path="/movies" element={<Browse fixedKind="movie"/>}/>
@@ -31,4 +41,4 @@ function App(){return <StoreProvider><BrowserRouter><SiteLayout><Suspense fallba
 initializePwa();
 registerServiceWorker();
 initializeTvNavigation();
-createRoot(document.getElementById('root')).render(<App/>);
+createRoot(document.getElementById('root')).render(<AppErrorBoundary><App/></AppErrorBoundary>);

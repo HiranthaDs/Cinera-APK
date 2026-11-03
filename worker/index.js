@@ -67,7 +67,7 @@ function sourceData(env,kind,id,season,episode){
       id:'vidy-external',
       label:'Vidy (external player)',
       type:'iframe',
-      url:`https://vidy.st/${route}?color=FF3454&autoplay=true${flags}`,
+      url:`https://www.vidy.st/${route}?color=FF3454&autoplay=true${flags}`,
     },{external:true,priority:100});
   }
   const seen=new Set();
@@ -79,7 +79,7 @@ function sourceData(env,kind,id,season,episode){
       return true;
     })
     .sort((a,b)=>a.priority-b.priority);
-  return {sources,season,episode,playerVersion:5};
+  return {sources,season,episode,playerVersion:6};
 }
 
 async function handleApi(request,env){

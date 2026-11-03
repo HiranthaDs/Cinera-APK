@@ -1,4 +1,4 @@
-const VERSION='cinera-v1';
+const VERSION='cinera-v2-tv';
 const SHELL_CACHE=`${VERSION}-shell`;
 const DATA_CACHE=`${VERSION}-data`;
 const APP_SHELL=[

@@ -72,13 +72,13 @@ test('Vidy can be enabled as the external iframe fallback',async()=>{
   const sourceResponse=await requestWithVidy('/api/sources/tv/259909?season=1&episode=1');
   const sourceData=await sourceResponse.json();
   assert.equal(sourceResponse.status,200);
-  assert.equal(sourceData.playerVersion,5);
+  assert.equal(sourceData.playerVersion,6);
   assert.equal(sourceData.sources.length,1);
   assert.equal(sourceData.sources[0].id,'vidy-external');
   assert.equal(sourceData.sources[0].type,'iframe');
   assert.equal(sourceData.sources[0].delivery,'embed');
   assert.equal(sourceData.sources[0].external,true);
-  assert.match(sourceData.sources[0].url,/^https:\/\/vidy\.st\/tv\/259909\/1\/1\?/);
+  assert.match(sourceData.sources[0].url,/^https:\/\/www\.vidy\.st\/tv\/259909\/1\/1\?/);
 });
 
 test('invalid routes and methods return controlled JSON errors',async()=>{

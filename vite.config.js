@@ -7,5 +7,5 @@ export default defineConfig({
   environments:{worker:{build:{sourcemap:true}}},
   server:{port:5173,watch:{ignored:['**/.audit/**','**/.wrangler/**','**/docs/**','**/hich-reference*']}},
   preview:{port:4173},
-  build:{outDir:'dist',target:'es2022',sourcemap:false,cssCodeSplit:true,chunkSizeWarningLimit:650},
+  build:{outDir:'dist',target:'es2018',cssTarget:'chrome61',sourcemap:false,cssCodeSplit:true,chunkSizeWarningLimit:650},
 });

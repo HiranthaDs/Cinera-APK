@@ -11,7 +11,16 @@ function Hero({featured}){
   const [hovered,setHovered]=useState(false),[focusWithin,setFocusWithin]=useState(false),[paused,setPaused]=useState(false);
   const [reducedMotion,setReducedMotion]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   useEffect(()=>setSelected(0),[slides]);
-  useEffect(()=>{const media=window.matchMedia('(prefers-reduced-motion: reduce)');const update=()=>setReducedMotion(media.matches);media.addEventListener('change',update);return()=>media.removeEventListener('change',update);},[]);
+  useEffect(()=>{
+    const media=window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update=()=>setReducedMotion(media.matches);
+    if(media.addEventListener)media.addEventListener('change',update);
+    else media.addListener?.(update);
+    return()=>{
+      if(media.removeEventListener)media.removeEventListener('change',update);
+      else media.removeListener?.(update);
+    };
+  },[]);
   useEffect(()=>{const next=slides[(selected+1)%slides.length];if(!next)return;const image=new Image();image.src=img(next.backdrop||next.poster,'w1280');},[slides,selected]);
   useEffect(()=>{if(slides.length<=1||hovered||focusWithin||paused||reducedMotion)return;const timer=setInterval(()=>setSelected(value=>(value+1)%slides.length),8500);return()=>clearInterval(timer);},[slides,hovered,focusWithin,paused,reducedMotion]);
   const movie=slides[selected];if(!movie)return null;
@@ -23,7 +32,7 @@ function Hero({featured}){
         <h1 key={movie.id}>{movie.title}</h1>
         <div className="hero-movie-meta"><span>{movie.year||'TBA'}</span><span>{movie.kind==='tv'?'TV series':'Movie'}</span><span><Star size={13} fill="currentColor"/> {movie.rating?Number(movie.rating).toFixed(1):'NR'}</span></div>
         <p className="hero-movie-overview">{truncated(movie.overview,215)}</p>
-        <div className="hero-buttons"><Link to={`/watch/${movie.kind}/${movie.id}`} className="button button-primary button-large"><Play size={17} fill="currentColor"/> Watch options</Link><Link to={`/title/${movie.kind}/${movie.id}`} className="button button-glass button-large"><Info size={18}/> Details</Link></div>
+        <div className="hero-buttons"><Link data-tv-autofocus to={`/watch/${movie.kind}/${movie.id}`} className="button button-primary button-large"><Play size={17} fill="currentColor"/> Watch options</Link><Link to={`/title/${movie.kind}/${movie.id}`} className="button button-glass button-large"><Info size={18}/> Details</Link></div>
       </div>
       <div className="hero-card-stack" style={{backgroundImage:movie.backdrop||movie.poster?`url('${img(movie.backdrop||movie.poster,'w1280')}')`:undefined}}>
         <div className="hero-card-number">{String(selected+1).padStart(2,'0')}</div>

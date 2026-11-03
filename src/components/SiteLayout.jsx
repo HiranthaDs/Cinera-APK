@@ -57,7 +57,7 @@ function SiteHeader(){
       <div className="header-actions">
         <button ref={searchTrigger} className="header-search-trigger" aria-label="Search the catalog" aria-expanded={searchOpen} aria-controls="catalog-search" onClick={()=>{setMenuOpen(false);setSearchOpen(value=>!value);}}>{searchOpen?<X size={21}/>:<Search size={21}/>}</button>
         <Link to="/discover" className="header-cta">Find a movie <ArrowUpRight size={17}/></Link>
-        <button ref={menuTrigger} className="menu-toggle" onClick={()=>{setSearchOpen(false);setMenuOpen(value=>!value);}} aria-expanded={menuOpen} aria-controls="main-menu"><strong>{menuOpen?'CLOSE':'MENU'}</strong>{menuOpen?<X size={25}/>:<Menu size={25}/>}</button>
+        <button ref={menuTrigger} className="menu-toggle" onClick={()=>{setSearchOpen(false);setMenuOpen(value=>!value);}} aria-label={menuOpen?'Close navigation menu':'Open navigation menu'} aria-expanded={menuOpen} aria-controls="main-menu"><strong>{menuOpen?'CLOSE':'MENU'}</strong>{menuOpen?<X size={25}/>:<Menu size={25}/>}</button>
       </div>
     </div></header>
     {searchOpen&&<div className="search-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)closeSearch();}}><div ref={searchDialog} className="search-drawer" id="catalog-search" role="dialog" aria-modal="true" aria-labelledby="search-dialog-title"><div className="search-drawer-heading"><div id="search-dialog-title"><span className="live-dot"/> Find your next story</div><button className="search-cancel" onClick={closeSearch} aria-label="Close search"><X size={17}/><span>ESC</span></button></div><div className="search-drawer-inner"><SmartSearch variant="drawer" autoFocus/></div><p className="search-drawer-note">Movies, series, and something you haven’t discovered yet.</p></div></div>}
@@ -69,6 +69,6 @@ function Footer(){return <footer className="site-footer"><div className="footer-
 
 export default function SiteLayout({children}){
   const location=useLocation();
-  useEffect(()=>{window.scrollTo({top:0,behavior:'instant'});},[location.pathname,location.search]);
+  useEffect(()=>{window.scrollTo({top:0,behavior:'auto'});},[location.pathname,location.search]);
   return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to content</a><SiteHeader/><main id="main-content">{children}</main><Footer/><nav className="mobile-bottom-nav">{links.filter((_,index)=>index!==3).map(({to,label,icon:Icon})=><NavLink to={to} key={to} end={to==='/' }><Icon size={20}/><span>{label==='TV series'?'Series':label}</span></NavLink>)}</nav></div>;
 }
