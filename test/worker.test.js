@@ -63,7 +63,7 @@ test('detail, season and source routes validate and normalize data',async()=>{
   assert.deepEqual(unlicensedData.sources,[]);
 });
 
-test('Vidy can be enabled as the sandboxed external fallback',async()=>{
+test('Vidy can be enabled as the external iframe fallback',async()=>{
   const healthResponse=await requestWithVidy('/api/health');
   const health=await healthResponse.json();
   assert.equal(health.externalEmbed,true);

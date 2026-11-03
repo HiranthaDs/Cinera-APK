@@ -27,7 +27,7 @@ A responsive, full-stack movie discovery portal inspired by the **layout pattern
 - Search titles, including movie and series results
 - Detailed movie pages and TV seasons / episodes
 - First-party player for selectable direct MP4 and HLS sources
-- Optional Vidy iframe fallback with browser sandbox restrictions on pop-ups and top-level redirects
+- Optional Vidy iframe fallback with the permissions required by its external player
 - Add your own **licensed** MP4/HLS sources in `worker/sources.js`
 - Cloudflare Worker API, edge-cached catalog responses and globally distributed static assets
 - SPA route fallback, security headers and Cloudflare Workers observability
@@ -74,7 +74,7 @@ For TMDB commercial use, review TMDB's terms. TMDB supplies **metadata and artwo
 
 ## Playback providers
 
-When `ENABLE_VIDY=true`, Cinera adds Vidy as an external iframe fallback for movies and individual TV episodes. The iframe is sandboxed without popup or top-navigation permission. Vidy still controls the content rendered inside its frame, including any in-player advertising, availability, and licensing; Cinera cannot remove or verify those elements.
+When `ENABLE_VIDY=true`, Cinera adds Vidy as an external iframe fallback for movies and individual TV episodes. Vidy does not function inside a restricted iframe sandbox, so the embed is loaded without a `sandbox` attribute. Vidy controls the content and browser actions initiated inside its frame, including advertising, pop-ups, availability, and licensing; Cinera cannot remove or verify those elements.
 
 Direct HTTPS MP4/HLS sources configured in `worker/sources.js` are preferred over Vidy. For titles without any available source, the watch page shows regional legal-provider options from TMDB and an official trailer when available. TMDB catalog metadata does not include full movie files.
 
