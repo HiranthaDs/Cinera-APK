@@ -22,6 +22,7 @@
   "shortcuts": [
     {"name": "Browse movies", "short_name": "Movies", "url": "/movies", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
     {"name": "Browse TV series", "short_name": "Series", "url": "/series", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
-    {"name": "Open my list", "short_name": "My list", "url": "/watchlist", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]}
+    {"name": "Open my list", "short_name": "My list", "url": "/watchlist", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Pair phone remote", "short_name": "Remote", "url": "/pair", "icons": [{"src": "/icons/icon-192.png", "sizes": "192x192"}]}
   ]
 }

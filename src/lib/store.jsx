@@ -24,6 +24,9 @@ export function StoreProvider({children}) {
     updateProgress(prev=>({...prev,[`${keyOf(item)}:${season}:${episode}`]:{seconds:Math.floor(seconds),duration:Number(duration)||0,updatedAt:Date.now()}}));
   };
   const getProgress=(item,season=1,episode=1)=>progress[`${keyOf(item)}:${season}:${episode}`]||null;
-  return <Context.Provider value={{saved,history,progress,isSaved,toggleSaved,markWatched,saveProgress,getProgress}}>{children}</Context.Provider>;
+  const clearProgress=(item,season=1,episode=1)=>updateProgress(prev=>{const next={...prev};delete next[`${keyOf(item)}:${season}:${episode}`];return next;});
+  const removeHistory=item=>updateHistory(prev=>prev.filter(entry=>keyOf(entry)!==keyOf(item)));
+  const clearHistory=()=>updateHistory([]);
+  return <Context.Provider value={{saved,history,progress,isSaved,toggleSaved,markWatched,saveProgress,getProgress,clearProgress,removeHistory,clearHistory}}>{children}</Context.Provider>;
 }
 export const useStore=()=>useContext(Context);

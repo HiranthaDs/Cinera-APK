@@ -36,6 +36,67 @@ function json(data,{status=200,cache=CACHE.none,headers={}}={}){
   });
 }
 
+const remoteMessage=(type,data={})=>JSON.stringify({type,...data});
+
+export class RemoteSession{
+  constructor(ctx){this.ctx=ctx;}
+
+  socketsFor(role){
+    return this.ctx.getWebSockets().filter(socket=>socket.deserializeAttachment()?.role===role);
+  }
+
+  sendPresence(){
+    const screenConnected=this.socketsFor('screen').length>0;
+    const remoteConnected=this.socketsFor('remote').length>0;
+    for(const socket of this.ctx.getWebSockets()){
+      try{socket.send(remoteMessage('presence',{screenConnected,remoteConnected}));}catch{}
+    }
+  }
+
+  async fetch(request){
+    if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket upgrade required',{status:426});
+    const role=new URL(request.url).searchParams.get('role');
+    if(role!=='screen'&&role!=='remote')return new Response('Invalid remote role',{status:400});
+    for(const existing of this.socketsFor(role)){
+      try{existing.close(1000,`${role} replaced`);}catch{}
+    }
+    const pair=new WebSocketPair();
+    const [client,server]=Object.values(pair);
+    server.serializeAttachment({role,connectedAt:Date.now()});
+    this.ctx.acceptWebSocket(server);
+    server.send(remoteMessage('ready',{role}));
+    this.sendPresence();
+    return new Response(null,{status:101,webSocket:client});
+  }
+
+  async webSocketMessage(socket,message){
+    if(typeof message!=='string'||message.length>4096)return;
+    let payload;
+    try{payload=JSON.parse(message);}catch{return;}
+    const role=socket.deserializeAttachment()?.role;
+    if(payload?.type==='ping'){
+      socket.send(remoteMessage('pong',{at:Date.now()}));
+      return;
+    }
+    const allowed=role==='remote'?payload?.type==='command':role==='screen'&&payload?.type==='state';
+    if(!allowed)return;
+    const targetRole=role==='remote'?'screen':'remote';
+    for(const target of this.socketsFor(targetRole)){
+      try{target.send(message);}catch{}
+    }
+  }
+
+  async webSocketClose(socket,code,reason){
+    try{socket.close(code,reason);}catch{}
+    this.sendPresence();
+  }
+
+  async webSocketError(socket){
+    try{socket.close(1011,'Remote connection error');}catch{}
+    this.sendPresence();
+  }
+}
+
 function sourceData(env,kind,id,season,episode){
   const out=[];
   const addSource=(source,{external=false,priority=50}={})=>{
@@ -62,7 +123,7 @@ function sourceData(env,kind,id,season,episode){
   ])addSource(source,{priority:10});
   if(env.ENABLE_VIDY!=='false'){
     const route=kind==='movie'?`movie/${id}`:`tv/${id}/${season}/${episode}`;
-    const flags=kind==='tv'?'&nextEpisode=true&episodeSelector=true&autoplayNextEpisode=true':'';
+    const flags=kind==='tv'?'&nextEpisode=true&episodeSelector=true':'';
     addSource({
       id:'vidy-external',
       label:'Vidy (external player)',
@@ -150,6 +211,15 @@ async function handleApi(request,env){
       int(url.searchParams.get('season'),1,100),
       int(url.searchParams.get('episode'),1,1000),
     ),{cache:CACHE.brief});
+  }
+
+  if(path==='/api/remote/socket'){
+    const pair=String(url.searchParams.get('pair')||'');
+    const role=String(url.searchParams.get('role')||'');
+    if(!/^[A-Za-z0-9_-]{22,80}$/.test(pair)||!['screen','remote'].includes(role))return json({error:'Invalid remote pairing request'},{status:400});
+    if(!env.REMOTE_SESSIONS)return json({error:'Remote pairing is not configured'},{status:503});
+    const stub=env.REMOTE_SESSIONS.getByName(pair);
+    return stub.fetch(request);
   }
 
   return json({error:'API route not found'},{status:404});

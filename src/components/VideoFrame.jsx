@@ -5,7 +5,7 @@ import {normalizeRemoteKey} from '../lib/tvNavigation';
 
 const LOAD_TIMEOUT=25000;
 
-export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onStateChange=()=>{}}){
+export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onStateChange=()=>{},dataSaver=false}){
   const videoRef=useRef(null);
   const iframeRef=useRef(null);
   const shellRef=useRef(null);
@@ -26,6 +26,7 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
     setStatus(next);
     if(detail)setMessage(detail);
     onStateRef.current(next,detail);
+    window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{playerState:next,playerMessage:detail}}));
   },[]);
 
   useEffect(()=>{
@@ -53,7 +54,7 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
     if(!source||source.type==='iframe'||!videoRef.current)return;
     const elem=videoRef.current;
     const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-    const constrained=Boolean(connection?.saveData||['slow-2g','2g'].includes(connection?.effectiveType));
+    const constrained=Boolean(dataSaver||connection?.saveData||['slow-2g','2g'].includes(connection?.effectiveType));
     let hls;
     let disposed=false;
     let didResume=false;
@@ -170,7 +171,7 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
       elem.removeAttribute('src');
       elem.load();
     };
-  },[source?.id,source?.url,source?.type,attempt,updateState]);
+  },[source?.id,source?.url,source?.type,attempt,dataSaver,updateState]);
 
   useEffect(()=>{
     if(!source||!['loading','buffering','starting'].includes(status))return;
@@ -220,6 +221,32 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
     else if(key.toLowerCase()==='f')toggleFullscreen();
   };
 
+  useEffect(()=>{
+    const command=event=>{
+      const action=event.detail?.action;
+      if(!action)return;
+      if(action==='fullscreen'){toggleFullscreen();return;}
+      if(source?.type==='iframe'){
+        if(action==='restart')retry();
+        return;
+      }
+      const elem=videoRef.current;if(!elem)return;
+      if(action==='play_pause')elem.paused?playFromGesture():elem.pause();
+      else if(action==='play')playFromGesture();
+      else if(action==='pause')elem.pause();
+      else if(action==='seek_relative')elem.currentTime=Math.max(0,Math.min(elem.duration||Infinity,elem.currentTime+(Number(event.detail.seconds)||0)));
+      else if(action==='volume')elem.volume=Math.max(0,Math.min(1,elem.volume+(Number(event.detail.delta)||0)));
+      else if(action==='mute')elem.muted=!elem.muted;
+      else if(action==='restart'){elem.currentTime=0;playFromGesture();}
+      else if(action==='pip'){
+        if(document.pictureInPictureElement)document.exitPictureInPicture?.().catch(()=>{});
+        else elem.requestPictureInPicture?.().catch(()=>{});
+      }
+    };
+    window.addEventListener('cinera:remote-command',command);
+    return()=>window.removeEventListener('cinera:remote-command',command);
+  },[source?.id,source?.type,attempt]);
+
   if(!source)return <div className="video-unavailable"><Clapperboard size={36}/><span className="player-state-label">NO DIRECT SOURCE</span><h2>No ad-free stream is configured</h2><p>Use a legal watch option below, or add a licensed MP4 or HLS stream for this title.</p></div>;
 
   const loading=['loading','buffering','starting'].includes(status);
@@ -229,7 +256,7 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
   return <div ref={shellRef} className={`video-frame-shell state-${status}`} tabIndex={0} data-tv-autofocus data-native-arrows={source.type==='iframe'?undefined:'true'} onKeyDown={handleRemote} aria-label={`${source.label} player`} aria-busy={loading}>
     {source.type==='iframe'
       ?<iframe ref={iframeRef} tabIndex={-1} key={`${source.url}-${attempt}`} src={iframeUrl} title={source.label} allow="encrypted-media; autoplay *; fullscreen *; picture-in-picture *" allowFullScreen className="video-element" onLoad={()=>updateState('connected',`${source.label} opened`)} onError={()=>updateState('error',`${source.label} could not be opened. Retry or choose another source.`)}/>
-      :<video key={`${source.url}-${attempt}`} className="video-element" ref={videoRef} controls playsInline preload="auto" poster={poster||undefined} controlsList="nodownload noplaybackrate" disablePictureInPicture={false} onTimeUpdate={event=>onProgressRef.current(event.currentTarget.currentTime,event.currentTarget.duration)} onEnded={event=>onProgressRef.current(event.currentTarget.duration,event.currentTarget.duration)}/>}
+      :<video key={`${source.url}-${attempt}`} className="video-element" ref={videoRef} controls playsInline preload={dataSaver?'metadata':'auto'} poster={poster||undefined} controlsList="nodownload noplaybackrate" disablePictureInPicture={false} onTimeUpdate={event=>{const elem=event.currentTarget;onProgressRef.current(elem.currentTime,elem.duration);window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{currentTime:elem.currentTime,duration:elem.duration,progress:Number.isFinite(elem.duration)&&elem.duration>0?elem.currentTime/elem.duration*100:0,muted:elem.muted,volume:elem.volume}}));}} onEnded={event=>onProgressRef.current(event.currentTarget.duration,event.currentTarget.duration)}/>}
     {loading&&<PlaybackLoading phase={connectionStage} title={message} detail={loadingDetail} sourceLabel={source.label}/>}
     {status==='blocked'&&<div className="player-start-prompt"><span className="player-state-label">READY TO WATCH</span><button className="button button-primary player-start-button" onClick={playFromGesture}><Play size={22} fill="currentColor"/> Play now</button><p>Your browser needs one tap to start with sound.</p></div>}
     {status==='error'&&<div className="player-error" role="alert"><ShieldAlert size={34}/><strong>Playback needs attention</strong><p>{message}</p><div><button className="button button-primary" onClick={retry}><RefreshCcw size={16}/> Retry source</button><a className="button button-glass" href={source.url} target="_blank" rel="noreferrer">Open directly <ExternalLink size={15}/></a></div></div>}

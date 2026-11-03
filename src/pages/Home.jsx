@@ -4,6 +4,7 @@ import {Play,Pause,Info,ChevronLeft,ChevronRight,Flame,MonitorPlay,ShieldAlert,A
 import {api,img,truncated} from '../lib/api';
 import {useStore} from '../lib/store';
 import {Section,Skeletons,HeroSkeleton,ErrorPanel} from '../components/UI';
+import SurpriseButton from '../components/SurpriseButton';
 
 function Hero({featured}){
   const slides=useMemo(()=>featured.slice(0,6),[featured]);
@@ -61,7 +62,7 @@ export default function Home(){
         {(data.rows||[]).map((row,index)=><Section key={row.id} title={row.label} sub={index===0?'The titles everybody is talking about':index===1?'Stories worth staying up for':undefined} items={row.items} kind={row.kind} to={row.kind==='tv'?'/series':'/movies'} icon={index===0?<Flame className="section-heading-icon" size={23}/>:index===1?<MonitorPlay className="section-heading-icon" size={23}/>:null}/>) }
       </>}
       {!data&&!error&&<div className="home-loading-list section-shell"><div className="section-heading"><div><div className="section-title-wrap"><Flame className="section-heading-icon" size={23}/><h2>Trending movies</h2></div><p>The titles everybody is talking about</p></div></div><Skeletons count={6} layout="row"/></div>}
-      <div className="discover-callout"><div><span className="eyebrow">DON'T KNOW WHAT TO WATCH?</span><h2>There’s a story for every mood.</h2><p>Explore genres, discover hidden gems, and save your next favorites in one place.</p><Link to="/discover" className="button button-primary">Explore the catalog <ArrowRight size={17}/></Link></div><div className="callout-orbits"><span/><span/><span><Play size={48} fill="currentColor"/></span></div></div>
+      <div className="discover-callout"><div><span className="eyebrow">DON'T KNOW WHAT TO WATCH?</span><h2>There’s a story for every mood.</h2><p>Explore genres, discover hidden gems, and save your next favorites in one place.</p><div className="callout-actions"><Link to="/discover" className="button button-primary">Explore the catalog <ArrowRight size={17}/></Link><SurpriseButton/></div></div><div className="callout-orbits"><span/><span/><span><Play size={48} fill="currentColor"/></span></div></div>
     </div>
   </>;
 }

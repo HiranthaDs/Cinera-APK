@@ -32,6 +32,10 @@ A responsive, full-stack movie discovery portal inspired by the **layout pattern
 - Cloudflare Worker API, edge-cached catalog responses and globally distributed static assets
 - SPA route fallback, security headers and Cloudflare Workers observability
 - Watchlist, recent titles and playback progress stored in browser localStorage, no login needed
+- QR phone remote with live D-pad, navigation, playback, volume and fullscreen controls
+- Voice search and a random “Surprise me” discovery action
+- Sleep timer, Picture-in-Picture, Data Saver and autoplay-next preferences
+- Start Over, native sharing, keyboard shortcut guide and editable watch history
 - TMDB viewing-provider links where available
 - Fallback demo catalog when TMDB credentials are not configured
 
@@ -120,6 +124,7 @@ If a video server blocks cross-origin requests, fix its CORS headers **on the se
 - `GET /api/season/1396/1`
 - `GET /api/sources/movie/157336`
 - `GET /api/sources/tv/1396?season=1&episode=1`
+- `GET /api/remote/socket?pair=...&role=screen|remote` (WebSocket upgrade)
 
 ## Deploy to Cloudflare Workers
 
@@ -131,6 +136,8 @@ npm run deploy
 ```
 
 `npm run deploy` builds the app and uploads values from the ignored local `.env` file as encrypted Worker secrets. The configured Worker name is `cinera-by-hich`, matching the current production URL. Add a production custom domain under **Workers & Pages → cinera-by-hich → Settings → Domains & Routes**.
+
+The QR remote uses the configured `RemoteSession` SQLite-backed Durable Object. Its binding and first migration are already declared in `wrangler.jsonc`; Wrangler creates the namespace on the first deployment.
 
 ### Automatic GitHub deployments
 

@@ -11,6 +11,20 @@
   "vars": {
     "ENABLE_VIDY": "true"
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REMOTE_SESSIONS",
+        "class_name": "RemoteSession"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1-remote-sessions",
+      "new_sqlite_classes": ["RemoteSession"]
+    }
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 0.1

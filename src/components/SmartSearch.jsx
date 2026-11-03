@@ -1,6 +1,6 @@
 ﻿import React,{useEffect,useId,useRef,useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {ArrowUpRight,Clock3,Film,LoaderCircle,Search,X,Zap} from 'lucide-react';
+import {ArrowUpRight,Clock3,Film,LoaderCircle,Mic,Search,X,Zap} from 'lucide-react';
 import {api,img} from '../lib/api';
 
 const popular=['The Dark Knight','Dune','Breaking Bad','Stranger Things'];
@@ -15,12 +15,15 @@ const readRecent=()=>{
 export default function SmartSearch({initialValue='',variant='page',autoFocus=false}){
   const navigate=useNavigate();
   const inputRef=useRef(null);
+  const recognitionRef=useRef(null);
   const listId=useId();
   const [value,setValue]=useState(initialValue);
   const [result,setResult]=useState({query:'',items:[],status:'idle'});
   const [focused,setFocused]=useState(autoFocus);
   const [active,setActive]=useState(-1);
   const [recent,setRecent]=useState(readRecent);
+  const [listening,setListening]=useState(false);
+  const supportsVoice=typeof window!=='undefined'&&Boolean(window.SpeechRecognition||window.webkitSpeechRecognition);
   const query=value.trim();
   const isQuery=query.length>=2;
   const suggestions=result.query===query?result.items:[];
@@ -31,6 +34,7 @@ export default function SmartSearch({initialValue='',variant='page',autoFocus=fa
   const showPanel=focused;
 
   useEffect(()=>{setValue(initialValue);setActive(-1);},[initialValue]);
+  useEffect(()=>()=>recognitionRef.current?.abort?.(),[]);
   useEffect(()=>{
     setActive(-1);
     if(!isQuery){setResult({query,items:[],status:'idle'});return;}
@@ -64,6 +68,17 @@ export default function SmartSearch({initialValue='',variant='page',autoFocus=fa
     if(!clean){inputRef.current?.focus();return;}
     remember(clean);close();navigate(`/search?q=${encodeURIComponent(clean)}`);
   };
+  const startVoice=()=>{
+    if(!supportsVoice||listening)return;
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const recognition=new Recognition();recognitionRef.current=recognition;
+    recognition.lang=navigator.language||'en-US';recognition.interimResults=false;recognition.maxAlternatives=1;
+    recognition.onstart=()=>setListening(true);
+    recognition.onend=()=>setListening(false);
+    recognition.onerror=()=>setListening(false);
+    recognition.onresult=event=>{const transcript=event.results?.[0]?.[0]?.transcript?.trim();if(transcript){setValue(transcript);search(transcript);}};
+    recognition.start();
+  };
   const choose=item=>{
     if(typeof item==='string'){setValue(item);search(item);return;}
     remember(item.title);close();navigate(`/title/${item.kind}/${item.id}`);
@@ -94,6 +109,7 @@ export default function SmartSearch({initialValue='',variant='page',autoFocus=fa
       <input ref={inputRef} autoFocus={autoFocus} value={value} onChange={event=>{setValue(event.target.value);setActive(-1);setFocused(true);}} onKeyDown={onKeyDown} placeholder="Movies, series & more…" aria-label="Search movies and TV series" role="combobox" aria-expanded={showPanel} aria-controls={showPanel?listId:undefined} aria-activedescendant={showPanel&&active>=0&&choices[active]?`${listId}-option-${active}`:undefined} aria-autocomplete="list" autoComplete="off" spellCheck="false" enterKeyHint="search"/>
       {busy&&<LoaderCircle className="search-spinner" size={17} aria-hidden="true"/>}
       {value&&<button type="button" className="search-clear" onClick={()=>{setValue('');setActive(-1);inputRef.current?.focus();}} aria-label="Clear search"><X size={17}/></button>}
+      {supportsVoice&&<button type="button" className={`voice-search ${listening?'is-listening':''}`} onClick={startVoice} aria-label={listening?'Listening for a title':'Search by voice'} aria-pressed={listening}><Mic size={17}/></button>}
       <button type="submit" className="smart-search-submit">Search <ArrowUpRight size={16} aria-hidden="true"/></button>
     </form>
     {showPanel&&<div className="search-suggestion-panel">

@@ -7,8 +7,10 @@ import {useStore} from '../lib/store';
 import VideoFrame from '../components/VideoFrame';
 import PlaybackLoading from '../components/PlaybackLoading';
 import {ErrorPanel,Rating} from '../components/UI';
+import WatchTools from '../components/WatchTools';
 
 const readPreference=()=>{try{return localStorage.getItem('cinera_source_preference')||'';}catch{return '';}};
+const readFlag=(key,fallback=true)=>{try{const value=localStorage.getItem(key);return value===null?fallback:value==='true';}catch{return fallback;}};
 
 export default function Watch(){
   const {kind,id}=useParams();
@@ -19,7 +21,8 @@ export default function Watch(){
   const [playerState,setPlayerState]=useState('loading'),[cinemaMode,setCinemaMode]=useState(false),[online,setOnline]=useState(()=>navigator.onLine);
   const [resume,setResume]=useState(0),[sourceAttempt,setSourceAttempt]=useState(0),[playerKey,setPlayerKey]=useState(0);
   const [failedSources,setFailedSources]=useState(()=>new Set()),[autoSwitch,setAutoSwitch]=useState(true),[failoverNote,setFailoverNote]=useState('');
-  const {markWatched,saveProgress,getProgress}=useStore();
+  const [dataSaver,setDataSaver]=useState(()=>readFlag('cinera_data_saver',false)),[autoNext,setAutoNext]=useState(()=>readFlag('cinera_auto_next',true));
+  const {markWatched,saveProgress,getProgress,clearProgress}=useStore();
   const lastSaved=useRef(0);
   const source=sources[sourceIndex]||null;
 
@@ -71,6 +74,8 @@ export default function Watch(){
     },1800);
     return()=>clearTimeout(timer);
   },[playerState,autoSwitch,sourceIndex,sources,failedSources,source?.label,setParams]);
+  useEffect(()=>{try{localStorage.setItem('cinera_data_saver',String(dataSaver));}catch{}},[dataSaver]);
+  useEffect(()=>{try{localStorage.setItem('cinera_auto_next',String(autoNext));}catch{}},[autoNext]);
 
   const reportProgress=useCallback((seconds,duration)=>{
     if(!item||!Number.isFinite(seconds)||seconds<0)return;
@@ -92,6 +97,7 @@ export default function Watch(){
       else if(payload.event==='ended')setPlayerState('ended');
       else if(payload.event==='timeupdate')setPlayerState(current=>current==='connected'?'playing':current);
       if(['timeupdate','pause','ended'].includes(payload.event)&&typeof payload.currentTime==='number')reportRef.current(payload.currentTime,payload.duration);
+      if(typeof payload.currentTime==='number')window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{playerState:payload.event==='timeupdate'?'playing':payload.event,currentTime:payload.currentTime,duration:payload.duration,progress:Number(payload.duration)>0?payload.currentTime/payload.duration*100:0}}));
     };
     window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener);
   },[sources,sourceIndex]);
@@ -114,6 +120,20 @@ export default function Watch(){
   const updateEpisode=(nextSeason,nextEp)=>{setParams(current=>{const updated=new URLSearchParams(current);updated.set('season',String(nextSeason));updated.set('episode',String(nextEp));return updated;});};
   const idx=episodes.findIndex(ep=>ep.episode_number===episode);
   const next=episodes[idx+1];
+  useEffect(()=>{
+    if(playerState!=='ended'||!autoNext||kind!=='tv'||!next)return;
+    const timer=setTimeout(()=>updateEpisode(season,next.episode_number),2500);
+    return()=>clearTimeout(timer);
+  },[playerState,autoNext,kind,season,next?.episode_number]);
+  useEffect(()=>{
+    if(!item)return;
+    window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{title:item.title,subtitle:kind==='tv'?`Season ${season} · Episode ${episode}`:`${item.year||''} · Movie`,playerState}}));
+  },[item?.id,item?.title,item?.year,kind,season,episode,playerState]);
+  const restart=()=>{if(item)clearProgress(item,season,episode);setResume(0);setPlayerKey(value=>value+1);};
+  useEffect(()=>{
+    const command=event=>{if(event.detail?.action==='restart')restart();};
+    window.addEventListener('cinera:remote-command',command);return()=>window.removeEventListener('cinera:remote-command',command);
+  },[item?.id,season,episode]);
   const stateLabel=sourceLoading?'FINDING SOURCE':!source?'NO DIRECT SOURCE':{loading:'CONNECTING',starting:'STARTING',blocked:'READY TO WATCH',buffering:'BUFFERING',connected:'PLAYER OPEN',ready:'READY',playing:'PLAYING',paused:'PAUSED',ended:'COMPLETE',error:'SOURCE ERROR',idle:'WAITING'}[playerState]||'READY';
   if(error)return <div className="content-width watch-page"><ErrorPanel message={error}/></div>;
 
@@ -121,8 +141,9 @@ export default function Watch(){
     <div className="watch-breadcrumb"><Link to={item?`/title/${kind}/${id}`:'/'}><ArrowLeft size={18}/> Back to details</Link><span>{item?.title||'Loading title…'}</span></div>
     <div className="watch-header"><div><span className="eyebrow"><span className="live-dot"/> NOW PLAYING / {stateLabel}</span><h1>{item?.title||'Loading…'}</h1>{kind==='tv'&&<p>Season {season} · Episode {episode}{episodes[idx]?.name?` — ${episodes[idx].name}`:''}</p>}</div>{item&&<div className="watch-header-meta"><Rating value={item.rating}/><span>{item.year||'—'}</span><span>{kind==='movie'?'MOVIE':'TV SERIES'}</span></div>}</div>
     <div className="watch-utility"><span className={online?'is-online':'is-offline'}>{online?<Wifi size={14}/>:<WifiOff size={14}/>} {online?'Connection online':'You are offline'}</span><span><ShieldCheck size={14}/> {sourceLoading?'Checking players':source?.external?source.label:'Secure in-app player'}</span><button onClick={()=>setCinemaMode(value=>!value)}>{cinemaMode?<Minimize2 size={15}/>:<Maximize2 size={15}/>} {cinemaMode?'Exit cinema mode':'Cinema mode'}</button></div>
-    <div className="theater-shell"><div className="video-container">{sourceLoading?<PlaybackLoading discovery phase={0} title="Finding an available playback source…" detail="Checking direct streams and the configured fallback players for this title."/>:sourceError?<div className="video-unavailable" role="alert"><AlertTriangle size={34}/><h2>Sources did not load</h2><p>{sourceError}</p><button className="button button-primary" onClick={rescanSources}><RefreshCcw size={16}/> Try again</button></div>:source?<VideoFrame key={`${source.id}-${playerKey}`} source={source} resume={resume} onProgress={reportProgress} poster={item?.backdrop?img(item.backdrop,'w1280'):undefined} onStateChange={handlePlayerState}/>:<div className="video-unavailable safe-source-empty"><ShieldCheck size={38}/><span className="player-state-label">NO SOURCE</span><h2>No playback source is available</h2><p>Enable a configured fallback or add a licensed MP4/HLS source for in-app playback.</p><div className="safe-source-actions">{provider?.link&&<a className="button button-primary" href={provider.link} target="_blank" rel="noreferrer">Legal watch options <ExternalLink size={15}/></a>}{trailer&&<a className="button button-glass" href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`} target="_blank" rel="noreferrer"><Clapperboard size={15}/> Watch trailer</a>}{!provider?.link&&!trailer&&<Link className="button button-glass" to={`/title/${kind}/${id}`}>Back to title details</Link>}</div></div>}</div></div>
+    <div className="theater-shell"><div className="video-container">{sourceLoading?<PlaybackLoading discovery phase={0} title="Finding an available playback source…" detail="Checking direct streams and the configured fallback players for this title."/>:sourceError?<div className="video-unavailable" role="alert"><AlertTriangle size={34}/><h2>Sources did not load</h2><p>{sourceError}</p><button className="button button-primary" onClick={rescanSources}><RefreshCcw size={16}/> Try again</button></div>:source?<VideoFrame key={`${source.id}-${playerKey}`} source={source} resume={resume} onProgress={reportProgress} poster={item?.backdrop?img(item.backdrop,'w1280'):undefined} onStateChange={handlePlayerState} dataSaver={dataSaver}/>:<div className="video-unavailable safe-source-empty"><ShieldCheck size={38}/><span className="player-state-label">NO SOURCE</span><h2>No playback source is available</h2><p>Enable a configured fallback or add a licensed MP4/HLS source for in-app playback.</p><div className="safe-source-actions">{provider?.link&&<a className="button button-primary" href={provider.link} target="_blank" rel="noreferrer">Legal watch options <ExternalLink size={15}/></a>}{trailer&&<a className="button button-glass" href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`} target="_blank" rel="noreferrer"><Clapperboard size={15}/> Watch trailer</a>}{!provider?.link&&!trailer&&<Link className="button button-glass" to={`/title/${kind}/${id}`}>Back to title details</Link>}</div></div>}</div></div>
     <div className="player-controls server-control-panel"><div className="player-source-intro"><MonitorPlay size={19}/><div><strong>Playback servers</strong><span>{sourceLoading?'Checking available sources…':sourceError?'Could not retrieve sources':sources.length>1?`${sources.length} sources ready · switch at any time`:sources.length===1?'One source available for this title':'No source available for this title'}</span></div><div className="player-source-actions"><button className={`server-auto ${autoSwitch?'is-active':''}`} aria-pressed={autoSwitch} onClick={()=>{setAutoSwitch(value=>!value);setFailoverNote('');}} title="Automatically try the next server after an error"><Check size={14}/> Auto {autoSwitch?'on':'off'}</button><button className="server-refresh" onClick={rescanSources} title="Rescan sources" disabled={sourceLoading}><RefreshCcw size={15}/> {sourceLoading?'Checking…':'Rescan'}</button></div></div><div className="source-pills">{sources.length?sources.map((entry,index)=>{const failed=failedSources.has(entry.id),active=sourceIndex===index;return <button className={`source-pill ${active?'active':''} ${failed?'has-failed':''}`} aria-pressed={active} aria-label={`${entry.label}. ${failed?'Unavailable':active?stateLabel:'Ready'}`} key={entry.id} onClick={()=>selectSource(index)}><span className="server-number">{String(index+1).padStart(2,'0')}</span><span><strong>{entry.label}</strong><small>{entry.external?'External player':entry.type==='hls'?'Adaptive HLS':'Direct video'} · {entry.quality||'Auto'}</small><em>{failed?'Needs retry':active?stateLabel:'Ready'}</em></span>{active?<Check size={16}/>:<Play size={14}/>}</button>; }):!sourceLoading&&!sourceError&&<span className="no-source">Enable a fallback or add a licensed source in <code>worker/sources.js</code>.</span>}</div>{failoverNote&&<p className="server-status-note" role="status" aria-live="polite">{failoverNote}</p>}</div>
+    <WatchTools item={item} sourceType={source?.type} dataSaver={dataSaver} onDataSaver={setDataSaver} autoNext={autoNext} onAutoNext={setAutoNext} canAutoNext={kind==='tv'} onRestart={restart}/>
     <div className="watch-bottom-layout"><div>
       {kind==='tv'&&item&&<section className="watch-episodes"><div className="episode-heading"><div className="section-title-wrap"><span className="section-title-marker"/><h2>Episode guide</h2></div><select value={season} aria-label="Season" onChange={event=>updateEpisode(Number(event.target.value),1)}>{(item.seasonList?.length?item.seasonList:[{season_number:1,name:'Season 1'}]).map(entry=><option key={entry.season_number} value={entry.season_number}>{entry.name}</option>)}</select></div><div className="mini-episode-grid">{episodes.map(entry=><button className={episode===entry.episode_number?'active':''} onClick={()=>updateEpisode(season,entry.episode_number)} key={entry.id}><small>EPISODE {String(entry.episode_number).padStart(2,'0')}</small><strong>{entry.name}</strong>{episode===entry.episode_number&&<span>Now playing</span>}</button>)}</div>{next&&<button className="next-episode" onClick={()=>updateEpisode(season,next.episode_number)}>Next episode: {next.name} <ChevronRight size={17}/></button>}</section>}
       {item&&<section className="watch-about"><div className="section-title-wrap"><span className="section-title-marker"/><h2>About this title</h2></div><p>{item.overview}</p></section>}

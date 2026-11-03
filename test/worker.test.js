@@ -94,3 +94,13 @@ test('invalid routes and methods return controlled JSON errors',async()=>{
   assert.equal(method.status,405);
   assert.equal((await method.json()).error,'Method not allowed');
 });
+
+test('remote pairing validates tokens and reports a missing relay binding',async()=>{
+  const invalid=await request('/api/remote/socket?pair=short&role=screen');
+  assert.equal(invalid.status,400);
+  assert.equal((await invalid.json()).error,'Invalid remote pairing request');
+
+  const unavailable=await request('/api/remote/socket?pair=abcdefghijklmnopqrstuvwx&role=screen');
+  assert.equal(unavailable.status,503);
+  assert.equal((await unavailable.json()).error,'Remote pairing is not configured');
+});
