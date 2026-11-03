@@ -1,6 +1,5 @@
-// Only add HTTPS MP4 or HLS URLs that you own or are licensed to stream.
-// Third-party iframe players are intentionally unsupported because their
-// advertisements and pop-ups cannot be controlled by this application.
+// Add only HTTPS MP4 or HLS URLs that you own or are licensed to stream.
+// The optional Vidy iframe fallback is generated separately in worker/index.js.
 export const playbackSources={
   'movie:10378':[
     {

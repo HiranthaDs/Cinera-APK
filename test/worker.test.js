@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
 
-const request=(path,options)=>worker.fetch(new Request(`https://cinera.test${path}`,options),{});
+const request=(path,options)=>worker.fetch(new Request(`https://cinera.test${path}`,options),{ENABLE_VIDY:'false'});
+const requestWithVidy=(path,options)=>worker.fetch(new Request(`https://cinera.test${path}`,options),{ENABLE_VIDY:'true'});
 
 test('health reports the Cloudflare runtime and sample fallback',async()=>{
   const response=await request('/api/health');
@@ -60,6 +61,24 @@ test('detail, season and source routes validate and normalize data',async()=>{
   const unlicensedData=await unlicensedResponse.json();
   assert.equal(unlicensedResponse.status,200);
   assert.deepEqual(unlicensedData.sources,[]);
+});
+
+test('Vidy can be enabled as the sandboxed external fallback',async()=>{
+  const healthResponse=await requestWithVidy('/api/health');
+  const health=await healthResponse.json();
+  assert.equal(health.externalEmbed,true);
+  assert.equal(health.playback,'licensed-direct+vidy');
+
+  const sourceResponse=await requestWithVidy('/api/sources/tv/259909?season=1&episode=1');
+  const sourceData=await sourceResponse.json();
+  assert.equal(sourceResponse.status,200);
+  assert.equal(sourceData.playerVersion,5);
+  assert.equal(sourceData.sources.length,1);
+  assert.equal(sourceData.sources[0].id,'vidy-external');
+  assert.equal(sourceData.sources[0].type,'iframe');
+  assert.equal(sourceData.sources[0].delivery,'embed');
+  assert.equal(sourceData.sources[0].external,true);
+  assert.match(sourceData.sources[0].url,/^https:\/\/vidy\.st\/tv\/259909\/1\/1\?/);
 });
 
 test('invalid routes and methods return controlled JSON errors',async()=>{

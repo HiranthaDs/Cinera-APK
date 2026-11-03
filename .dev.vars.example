@@ -4,3 +4,6 @@ TMDB_READ_ACCESS_TOKEN=
 
 # Optional fallback if you use a TMDB API key instead of a Read Access Token.
 TMDB_API_KEY=
+
+# Set to false to remove the external Vidy fallback.
+ENABLE_VIDY=true

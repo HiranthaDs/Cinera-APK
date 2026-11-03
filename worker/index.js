@@ -36,10 +36,11 @@ function json(data,{status=200,cache=CACHE.none,headers={}}={}){
   });
 }
 
-function sourceData(kind,id,season,episode){
+function sourceData(env,kind,id,season,episode){
   const out=[];
-  const addSource=(source,{priority=50}={})=>{
-    if(!source||!['video','hls'].includes(source.type))return;
+  const addSource=(source,{external=false,priority=50}={})=>{
+    const allowedTypes=external?['iframe']:['video','hls'];
+    if(!source||!allowedTypes.includes(source.type))return;
     let parsed;
     try{parsed=new URL(source.url);}catch{return;}
     if(parsed.protocol!=='https:')return;
@@ -50,7 +51,8 @@ function sourceData(kind,id,season,episode){
       url:parsed.toString(),
       quality:String(source.quality||'auto').slice(0,20),
       language:String(source.language||'auto').slice(0,20),
-      delivery:'direct',
+      delivery:external?'embed':'direct',
+      external,
       priority:Number(source.priority)||priority,
     });
   };
@@ -58,6 +60,16 @@ function sourceData(kind,id,season,episode){
     ...(playbackSources[`${kind}:${id}:${season}:${episode}`]||[]),
     ...(playbackSources[`${kind}:${id}`]||[]),
   ])addSource(source,{priority:10});
+  if(env.ENABLE_VIDY!=='false'){
+    const route=kind==='movie'?`movie/${id}`:`tv/${id}/${season}/${episode}`;
+    const flags=kind==='tv'?'&nextEpisode=true&episodeSelector=true&autoplayNextEpisode=true':'';
+    addSource({
+      id:'vidy-external',
+      label:'Vidy (external player)',
+      type:'iframe',
+      url:`https://vidy.st/${route}?color=FF3454&autoplay=true${flags}`,
+    },{external:true,priority:100});
+  }
   const seen=new Set();
   const sources=out
     .filter(source=>{
@@ -67,7 +79,7 @@ function sourceData(kind,id,season,episode){
       return true;
     })
     .sort((a,b)=>a.priority-b.priority);
-  return {sources,season,episode,playerVersion:4};
+  return {sources,season,episode,playerVersion:5};
 }
 
 async function handleApi(request,env){
@@ -79,8 +91,8 @@ async function handleApi(request,env){
     ok:true,
     runtime:'cloudflare-workers',
     catalog:liveCatalog(env)?'tmdb':'sample',
-    externalEmbed:false,
-    playback:'licensed-direct',
+    externalEmbed:env.ENABLE_VIDY!=='false',
+    playback:env.ENABLE_VIDY!=='false'?'licensed-direct+vidy':'licensed-direct',
   });
 
   if(path==='/api/home')return json(await homeData(env),{cache:CACHE.catalog});
@@ -132,6 +144,7 @@ async function handleApi(request,env){
     const kind=match[1],id=int(match[2],0,10000000);
     if(!kindOk(kind)||!id)return json({error:'Invalid title'},{status:400});
     return json(sourceData(
+      env,
       kind,
       id,
       int(url.searchParams.get('season'),1,100),
