@@ -52,7 +52,7 @@ function SiteHeader(){
   };
   return <>
     <header className={`site-header ${scrolled?'header-scrolled':''}`} id="top"><div className="header-inner">
-      <Link to="/" className="brand" aria-label="Cinera home"><span className="brand-mark"><Play size={18} fill="currentColor"/></span><span className="brand-word">CINERA</span><span className="brand-service">by Hich web<br/>development</span></Link>
+      <Link to="/" className="brand" aria-label="Cinera home"><span className="brand-mark"><Play size={18} fill="currentColor"/></span><span className="brand-word">CINERA</span></Link>
       <div className="header-center"><span className="live-dot"/> CINEMA · EVERYWHERE</div>
       <div className="header-actions">
         <button ref={searchTrigger} className="header-search-trigger" aria-label="Search the catalog" aria-expanded={searchOpen} aria-controls="catalog-search" onClick={()=>{setMenuOpen(false);setSearchOpen(value=>!value);}}>{searchOpen?<X size={21}/>:<Search size={21}/>}</button>
@@ -65,7 +65,7 @@ function SiteHeader(){
   </>;
 }
 
-function Footer(){return <footer className="site-footer"><div className="footer-inner"><div className="footer-kicker"><span>WATCH BETTER</span><span>BUILT FOR EVERY SCREEN</span></div><div className="footer-statement"><h2>YOUR NEXT STORY<br/><em>STARTS HERE.</em></h2><Clapperboard size={80}/></div><div className="footer-links">{links.map(({to,label})=><Link key={to} to={to}>{label}</Link>)}</div><div className="footer-bottom"><span>© {new Date().getFullYear()} Cinera. Independent movie discovery.</span></div></div></footer>}
+function Footer(){return <footer className="site-footer"><div className="footer-inner"><div className="footer-kicker"><span>WATCH BETTER</span><span>BUILT FOR EVERY SCREEN</span></div><div className="footer-statement"><h2>YOUR NEXT STORY<br/><em>STARTS HERE.</em></h2><Clapperboard size={80}/></div><div className="footer-links">{links.map(({to,label})=><Link key={to} to={to}>{label}</Link>)}</div><div className="footer-bottom"><span>© {new Date().getFullYear()} Cinera. Independent movie discovery.</span><span className="footer-credit">Developed by <strong>Hich Web</strong></span></div></div></footer>}
 
 export default function SiteLayout({children}){
   const location=useLocation();
