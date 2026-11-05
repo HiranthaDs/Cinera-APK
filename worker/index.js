@@ -123,7 +123,7 @@ function sourceData(env,kind,id,season,episode){
   ])addSource(source,{priority:10});
   if(env.ENABLE_VIDY!=='false'){
     const route=kind==='movie'?`movie/${id}`:`tv/${id}/${season}/${episode}`;
-    const flags=kind==='tv'?'&nextEpisode=true&episodeSelector=true':'';
+    const flags=kind==='tv'?'&nextEpisode=true&episodeSelector=true&autoplayNextEpisode=true':'';
     addSource({
       id:'vidy-external',
       label:'Vidy (external player)',
@@ -140,7 +140,7 @@ function sourceData(env,kind,id,season,episode){
       return true;
     })
     .sort((a,b)=>a.priority-b.priority);
-  return {sources,season,episode,playerVersion:6};
+  return {sources,season,episode,playerVersion:7};
 }
 
 async function handleApi(request,env){

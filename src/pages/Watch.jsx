@@ -82,25 +82,6 @@ export default function Watch(){
     const now=Date.now();if(now-lastSaved.current<4000&&seconds!==duration)return;
     lastSaved.current=now;saveProgress(item,seconds,duration,season,episode);
   },[item,season,episode,saveProgress]);
-  const reportRef=useRef(reportProgress);reportRef.current=reportProgress;
-  useEffect(()=>{
-    const selected=sources[sourceIndex];
-    if(!selected||selected.type!=='iframe')return;
-    const sourceOrigin=new URL(selected.url).origin;
-    const listener=event=>{
-      if(event.origin!==sourceOrigin)return;
-      let payload=event.data;
-      if(typeof payload==='string'){try{payload=JSON.parse(payload);}catch{return;}}
-      if(!payload||typeof payload!=='object')return;
-      if(payload.event==='play')setPlayerState('playing');
-      else if(payload.event==='pause')setPlayerState('paused');
-      else if(payload.event==='ended')setPlayerState('ended');
-      else if(payload.event==='timeupdate')setPlayerState(current=>current==='connected'?'playing':current);
-      if(['timeupdate','pause','ended'].includes(payload.event)&&typeof payload.currentTime==='number')reportRef.current(payload.currentTime,payload.duration);
-      if(typeof payload.currentTime==='number')window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{playerState:payload.event==='timeupdate'?'playing':payload.event,currentTime:payload.currentTime,duration:payload.duration,progress:Number(payload.duration)>0?payload.currentTime/payload.duration*100:0}}));
-    };
-    window.addEventListener('message',listener);return()=>window.removeEventListener('message',listener);
-  },[sources,sourceIndex]);
   const provider=item?.providers&&typeof item.providers==='object'&&!Array.isArray(item.providers)?item.providers:null;
   const trailer=item?.videos?.find(video=>video.type==='Trailer')||item?.videos?.[0];
   const selectSource=index=>{

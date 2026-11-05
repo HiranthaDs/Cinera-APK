@@ -19,7 +19,7 @@
     <img src="https://img.shields.io/badge/Cloudflare-Workers-f38020?logo=cloudflare&logoColor=white" alt="Cloudflare Workers">
     <img src="https://img.shields.io/badge/Android_TV-optimized-3ddc84?logo=android&logoColor=white" alt="Android TV optimized">
     <img src="https://img.shields.io/badge/PWA-installable-ff3454" alt="Installable PWA">
-    <img src="https://img.shields.io/badge/tests-20_passing-13c99a" alt="20 tests passing">
+    <img src="https://img.shields.io/badge/tests-23_passing-13c99a" alt="23 tests passing">
   </p>
 </div>
 
@@ -161,6 +161,8 @@ Never commit `.env`, `.dev.vars`, API tokens, or account credentials.
 
 Direct HTTPS MP4 and HLS sources in `worker/sources.js` are preferred. Configure only media you are authorized to distribute.
 
+On detected TV browsers, the optional Vidy fallback offers a remote-friendly full-page launch first. This avoids the autoplay and focus restrictions that many Android TV and webOS browsers apply to cross-origin iframes; the remote Back button returns to Cinera. An in-page embed remains available as a fallback.
+
 ```js
 export const playbackSources = {
   'movie:10378': [
@@ -226,7 +228,7 @@ npm run validate
 
 The validation pipeline checks Worker syntax, runs deterministic tests, builds the production client and Worker bundles, validates asset routing, and performs a Wrangler deployment dry-run.
 
-Current suite: **20 passing tests** covering API behavior, source failover, Android/LG TV detection, legacy remote keys, native HLS/fullscreen compatibility, CSP-safe legacy loading, gesture classification, acceleration, pointer clamping, and remote route validation.
+Current suite: **23 passing tests** covering API behavior, source failover, Vidy event/resume compatibility, Android/LG TV detection, legacy remote keys, native HLS/fullscreen compatibility, CSP-safe legacy loading, gesture classification, acceleration, pointer clamping, and remote route validation.
 
 ## Deployment
 

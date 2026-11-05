@@ -1,23 +1,28 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Clapperboard,ExternalLink,Play,RefreshCcw,ShieldAlert} from 'lucide-react';
 import PlaybackLoading from './PlaybackLoading';
+import {embedUrlWithProgress,parseEmbedPlayerMessage} from '../lib/embedPlayer';
 import {nativeHlsType,toggleFullscreen as toggleMediaFullscreen} from '../lib/mediaCompat';
 import {normalizeRemoteKey} from '../lib/tvNavigation';
 
 const LOAD_TIMEOUT=25000;
 
 export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onStateChange=()=>{},dataSaver=false}){
+  const tvMode=typeof document!=='undefined'&&document.documentElement.classList.contains('tv-ui');
+  const tvExternal=source?.type==='iframe'&&tvMode;
   const videoRef=useRef(null);
   const iframeRef=useRef(null);
   const shellRef=useRef(null);
   const onProgressRef=useRef(onProgress);
   const onStateRef=useRef(onStateChange);
   const resumeRef=useRef(resume);
-  const statusRef=useRef(source?'loading':'idle');
+  const statusRef=useRef(source?(tvExternal?'blocked':'loading'):'idle');
   const [status,setStatus]=useState(statusRef.current);
   const [message,setMessage]=useState('Connecting to server…');
   const [attempt,setAttempt]=useState(0);
   const [connectionStage,setConnectionStage]=useState(1);
+  const [embedStarted,setEmbedStarted]=useState(!tvExternal);
+  const tvLaunchPending=tvExternal&&!embedStarted;
   onProgressRef.current=onProgress;
   onStateRef.current=onStateChange;
   resumeRef.current=resume;
@@ -32,11 +37,11 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
 
   useEffect(()=>{
     setConnectionStage(1);
-    updateState(source?'loading':'idle','Connecting to server…');
-  },[source?.id,source?.url,source?.type,attempt,updateState]);
+    updateState(source?(tvLaunchPending?'blocked':'loading'):'idle',tvLaunchPending?'Press play to open the TV player.':'Connecting to server…');
+  },[source?.id,source?.url,source?.type,attempt,tvLaunchPending,updateState]);
 
   useEffect(()=>{
-    if(!source||source.type!=='iframe')return;
+    if(!source||source.type!=='iframe'||tvLaunchPending)return;
     const preparing=setTimeout(()=>{
       if(statusRef.current==='loading'){
         setConnectionStage(2);
@@ -49,7 +54,32 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
       if(statusRef.current==='loading')updateState('connected',`${source.label} opened`);
     },4200);
     return()=>{clearTimeout(preparing);clearTimeout(reveal);};
-  },[source?.id,source?.url,source?.type,attempt,updateState]);
+  },[source?.id,source?.url,source?.type,attempt,tvLaunchPending,updateState]);
+
+  useEffect(()=>{
+    if(!source||source.type!=='iframe')return;
+    const sourceOrigin=new URL(source.url).origin;
+    const listener=event=>{
+      if(event.origin!==sourceOrigin)return;
+      const frameWindow=iframeRef.current?.contentWindow;
+      if(frameWindow&&event.source!==frameWindow)return;
+      const payload=parseEmbedPlayerMessage(event.data);
+      if(!payload)return;
+      if(payload.event==='play')updateState('playing','Playing');
+      else if(payload.event==='pause')updateState('paused','Paused');
+      else if(payload.event==='ended')updateState('ended','Playback complete');
+      else if(payload.event==='timeupdate'&&statusRef.current==='connected')updateState('playing','Playing');
+      if(['timeupdate','pause','ended'].includes(payload.event)&&typeof payload.currentTime==='number')onProgressRef.current(payload.currentTime,payload.duration);
+      window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{
+        playerState:payload.event==='timeupdate'?'playing':payload.event,
+        currentTime:payload.currentTime,
+        duration:payload.duration,
+        progress:Number(payload.duration)>0&&typeof payload.currentTime==='number'?payload.currentTime/payload.duration*100:0,
+      }}));
+    };
+    window.addEventListener('message',listener);
+    return()=>window.removeEventListener('message',listener);
+  },[source?.id,source?.url,source?.type,updateState]);
 
   useEffect(()=>{
     if(!source||source.type==='iframe'||!videoRef.current)return;
@@ -175,12 +205,17 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
   },[source?.id,source?.url,source?.type,attempt,dataSaver,updateState]);
 
   useEffect(()=>{
-    if(!source||!['loading','buffering','starting'].includes(status))return;
+    if(!source||tvLaunchPending||!['loading','buffering','starting'].includes(status))return;
     const timer=setTimeout(()=>updateState('error','This server is taking longer than expected. Retry or choose another server.'),LOAD_TIMEOUT);
     return()=>clearTimeout(timer);
-  },[source?.url,source?.type,attempt,status,updateState]);
+  },[source?.url,source?.type,attempt,status,tvLaunchPending,updateState]);
 
   const retry=()=>{setConnectionStage(1);updateState('loading','Reconnecting to server…');setAttempt(value=>value+1);};
+  const startEmbeddedPlayer=()=>{
+    setEmbedStarted(true);
+    setConnectionStage(1);
+    updateState('loading','Opening Vidy inside Cinera…');
+  };
   const playFromGesture=()=>{
     const elem=videoRef.current;
     if(!elem||statusRef.current==='starting')return;
@@ -198,17 +233,19 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
   };
   const handleRemote=event=>{
     const key=normalizeRemoteKey(event);
+    if(['INPUT','SELECT','BUTTON','A'].includes(event.target.tagName)&&event.target!==shellRef.current)return;
     if(source?.type==='iframe'){
+      if(tvLaunchPending)return;
       if(['Enter',' ','MediaPlay','MediaPlayPause'].includes(key)){
         event.preventDefault();
         iframeRef.current?.focus();
+        try{iframeRef.current?.contentWindow?.focus();}catch{}
         updateState('connected','Player controls active');
       }
       return;
     }
     const elem=videoRef.current;
     if(!elem)return;
-    if(['INPUT','SELECT','BUTTON','A'].includes(event.target.tagName)&&event.target!==shellRef.current)return;
     if(['Enter',' ','MediaPlay','MediaPlayPause'].includes(key)){
       event.preventDefault();
       elem.paused?playFromGesture():elem.pause();
@@ -248,16 +285,16 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
 
   if(!source)return <div className="video-unavailable"><Clapperboard size={36}/><span className="player-state-label">NO DIRECT SOURCE</span><h2>No ad-free stream is configured</h2><p>Use a legal watch option below, or add a licensed MP4 or HLS stream for this title.</p></div>;
 
-  const loading=['loading','buffering','starting'].includes(status);
+  const loading=!tvLaunchPending&&['loading','buffering','starting'].includes(status);
   const loadingDetail=source.type==='iframe'?`Opening ${source.label}. Playback controls will appear here.`:connectionStage===1?'Waiting for the selected server to respond.':'Loading enough video for playback to begin.';
-  const joiner=source.url.includes('?')?'&':'?';
-  const iframeUrl=resume>0?`${source.url}${joiner}progress=${Math.floor(resume)}`:source.url;
-  return <div ref={shellRef} className={`video-frame-shell state-${status}`} tabIndex={0} data-tv-autofocus data-native-arrows={source.type==='iframe'?undefined:'true'} onKeyDown={handleRemote} aria-label={`${source.label} player`} aria-busy={loading}>
+  const iframeUrl=embedUrlWithProgress(source.url,resume);
+  return <div ref={shellRef} className={`video-frame-shell state-${status}`} tabIndex={0} data-tv-autofocus={tvLaunchPending?undefined:true} data-native-arrows={source.type==='iframe'?undefined:'true'} onKeyDown={handleRemote} aria-label={`${source.label} player`} aria-busy={loading}>
     {source.type==='iframe'
-      ?<iframe ref={iframeRef} tabIndex={-1} key={`${source.url}-${attempt}`} src={iframeUrl} title={source.label} allow="encrypted-media; autoplay *; fullscreen *; picture-in-picture *" allowFullScreen className="video-element" onLoad={()=>updateState('connected',`${source.label} opened`)} onError={()=>updateState('error',`${source.label} could not be opened. Retry or choose another source.`)}/>
+      ?embedStarted&&<iframe ref={iframeRef} tabIndex={0} key={`${source.url}-${attempt}`} src={iframeUrl} title={source.label} allow="encrypted-media; autoplay *; fullscreen *; picture-in-picture *" allowFullScreen frameBorder="0" loading="eager" referrerPolicy="strict-origin-when-cross-origin" className="video-element" onLoad={()=>updateState('connected',`${source.label} opened`)} onError={()=>updateState('error',`${source.label} could not be opened. Retry or choose another source.`)}/>
       :<video key={`${source.url}-${attempt}`} className="video-element" ref={videoRef} controls playsInline preload={dataSaver?'metadata':'auto'} poster={poster||undefined} controlsList="nodownload noplaybackrate" disablePictureInPicture={false} onTimeUpdate={event=>{const elem=event.currentTarget;onProgressRef.current(elem.currentTime,elem.duration);window.dispatchEvent(new CustomEvent('cinera:remote-state',{detail:{currentTime:elem.currentTime,duration:elem.duration,progress:Number.isFinite(elem.duration)&&elem.duration>0?elem.currentTime/elem.duration*100:0,muted:elem.muted,volume:elem.volume}}));}} onEnded={event=>onProgressRef.current(event.currentTarget.duration,event.currentTarget.duration)}/>}
+    {tvLaunchPending&&<div className="player-start-prompt tv-external-start"><span className="player-state-label">TV PLAYER READY</span><h2>Play with Vidy</h2><p>TV browsers play external video more reliably as a full-page player. Press Play, then use your remote’s Back button to return to Cinera.</p><div className="tv-external-actions"><a href={iframeUrl} className="button button-primary player-start-button" data-tv-autofocus><Play size={22} fill="currentColor"/> Play on TV</a><button type="button" className="button button-glass" onClick={startEmbeddedPlayer}>Play inside Cinera</button></div></div>}
     {loading&&<PlaybackLoading phase={connectionStage} title={message} detail={loadingDetail} sourceLabel={source.label}/>}
-    {status==='blocked'&&<div className="player-start-prompt"><span className="player-state-label">READY TO WATCH</span><button className="button button-primary player-start-button" onClick={playFromGesture}><Play size={22} fill="currentColor"/> Play now</button><p>Your browser needs one tap to start with sound.</p></div>}
+    {status==='blocked'&&!tvLaunchPending&&<div className="player-start-prompt"><span className="player-state-label">READY TO WATCH</span><button className="button button-primary player-start-button" onClick={playFromGesture}><Play size={22} fill="currentColor"/> Play now</button><p>Your browser needs one tap to start with sound.</p></div>}
     {status==='error'&&<div className="player-error" role="alert"><ShieldAlert size={34}/><strong>Playback needs attention</strong><p>{message}</p><div><button className="button button-primary" onClick={retry}><RefreshCcw size={16}/> Retry source</button><a className="button button-glass" href={source.url} target="_blank" rel="noreferrer">Open directly <ExternalLink size={15}/></a></div></div>}
     <span className="remote-hint">{source.type==='iframe'?'REMOTE: ENTER opens player controls':'REMOTE: ←/→ seek · ENTER play · F fullscreen'}</span>
   </div>;
