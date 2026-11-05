@@ -33,3 +33,44 @@
 @media(max-width:420px){
   .brand{font-size:27px}.header-inner{width:calc(100% - 24px)}.hero-buttons{gap:8px}.hero-buttons .button{padding-inline:15px;font-size:11px}.watch-stage{width:calc(100% - 24px)}.theater-shell{margin-inline:-12px}.source-pill{min-width:164px}.mobile-bottom-nav a{font-size:8px}
 }
+
+/* Layout fallbacks for webOS 4/5 and older Android TV WebViews. */
+@supports not (width:min(100%,1px)){
+  .content-width,.header-inner,.footer-inner{width:90%}
+  .menu-panel-inner,.search-drawer{width:100%}
+  .tv-ui .content-width,.tv-ui .header-inner,.tv-ui .footer-inner,.tv-ui .watch-stage{width:92%}
+}
+
+@supports not (aspect-ratio:16/9){
+  .poster-frame,.skeleton-poster{height:0;padding-bottom:150%}
+  .hero-card-stack{height:56vw;max-height:620px}
+  .video-container{height:56.25vw;max-height:720px}
+  .remote-trackpad{height:320px}
+  @media(min-width:761px) and (max-height:700px) and (orientation:landscape){
+    .watch-page .video-container{height:calc(100vh - 64px);max-height:calc(100vh - 64px)}
+  }
+}
+
+@supports not (display:grid){
+  .card-scroller{display:flex}
+  .card-scroller>.movie-card,.card-scroller>.skeleton-item{width:15%;min-width:15%;margin-right:2%}
+  .catalog-grid,.skeleton-grid,.detail-related-grid,.mini-episode-grid{display:flex;flex-wrap:wrap}
+  .catalog-grid>.movie-card,.skeleton-grid>.skeleton-item{width:14%;margin:0 1% 28px}
+  .detail-related-grid>.movie-card{width:23%;margin:0 1% 25px}
+  .mini-episode-grid>button{width:23%;margin:0 1% 10px}
+  .menu-panel nav a,.server-control-panel .source-pill{display:flex}
+  .menu-panel nav a>*+*,.server-control-panel .source-pill>*+*{margin-left:14px}
+  .pwa-install-card,.filter-trigger,.filter-sheet-header,.filter-sheet-body{display:block}
+  .pwa-install-card>*+*,.filter-sheet-body>.filter-group+.filter-group{margin-top:16px}
+}
+
+@supports not (font-size:clamp(1px,2vw,3px)){
+  .hero-movie-content h1{font-size:78px}
+  .catalog-heading h1{font-size:82px}
+  .detail-info h1{font-size:70px}
+  .watch-header h1{font-size:58px}
+  .section-heading h2,.section-title-wrap h2{font-size:40px}
+  .footer-statement h2{font-size:90px}
+}
+
+.menu-panel,.search-overlay,.filter-overlay,.player-loading,.player-error,.server-discovery,.player-start-prompt,.video-element,.detail-backdrop:after,.hero-card-stack:before{top:0;right:0;bottom:0;left:0}

@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Clapperboard,ExternalLink,Play,RefreshCcw,ShieldAlert} from 'lucide-react';
 import PlaybackLoading from './PlaybackLoading';
+import {nativeHlsType,toggleFullscreen as toggleMediaFullscreen} from '../lib/mediaCompat';
 import {normalizeRemoteKey} from '../lib/tvNavigation';
 
 const LOAD_TIMEOUT=25000;
@@ -112,7 +113,7 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
     elem.addEventListener('error',onError);
 
     if(source.type==='hls'){
-      if(elem.canPlayType('application/vnd.apple.mpegurl')){
+      if(nativeHlsType(elem)){
         elem.src=source.url;
         elem.load();
       }else import('hls.js').then(({default:Hls})=>{
@@ -193,9 +194,7 @@ export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onS
     });
   };
   const toggleFullscreen=()=>{
-    const target=shellRef.current;
-    if(!document.fullscreenElement)target?.requestFullscreen?.().catch(()=>{});
-    else document.exitFullscreen?.().catch(()=>{});
+    toggleMediaFullscreen(shellRef.current,videoRef.current,document).catch(()=>{});
   };
   const handleRemote=event=>{
     const key=normalizeRemoteKey(event);

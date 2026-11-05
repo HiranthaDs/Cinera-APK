@@ -5,7 +5,16 @@ import {detectTvDevice,detectTvIdentity,normalizeRemoteKey} from '../src/lib/tvN
 test('detects established Android TV and smart-TV user agents',()=>{
   assert.equal(detectTvDevice({userAgent:'Mozilla/5.0 (Linux; Android 11; SHIELD Android TV Build/RQ1A)'}),true);
   assert.equal(detectTvDevice({userAgent:'Mozilla/5.0 (SMART-TV; Linux; Tizen 7.0)'}),true);
+  assert.equal(detectTvDevice({userAgent:'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.41'}),true);
+  assert.equal(detectTvDevice({userAgent:'Mozilla/5.0 (webOS.TV-2022; Linux/SmartTV) AppleWebKit/537.36'}),true);
+  assert.equal(detectTvDevice({userAgent:'Mozilla/5.0 (Linux; Android 9; MIBOX4 Build/PI) AppleWebKit/537.36'}),true);
   assert.equal(detectTvDevice({userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel 8)',width:412,height:915,coarse:true}),false);
+});
+
+test('recognizes generic lean-back Android browsers without misclassifying touch devices',()=>{
+  const userAgent='Mozilla/5.0 (Linux; Android 9; Build/PPR2) AppleWebKit/537.36';
+  assert.equal(detectTvIdentity({userAgent,width:960,height:540,touchPoints:0}),true);
+  assert.equal(detectTvIdentity({userAgent,width:1280,height:800,touchPoints:5}),false);
 });
 
 test('uses coarse landscape dimensions as a TV fallback',()=>{
@@ -24,4 +33,7 @@ test('normalizes legacy Android remote key codes',()=>{
   assert.equal(normalizeRemoteKey({key:'Unidentified',keyCode:19}),'ArrowUp');
   assert.equal(normalizeRemoteKey({key:'Unidentified',keyCode:23}),'Enter');
   assert.equal(normalizeRemoteKey({key:'Left',keyCode:0}),'ArrowLeft');
+  assert.equal(normalizeRemoteKey({key:'Back',keyCode:0}),'BrowserBack');
+  assert.equal(normalizeRemoteKey({key:'Unidentified',keyCode:461}),'BrowserBack');
+  assert.equal(normalizeRemoteKey({key:'Unidentified',keyCode:10009}),'BrowserBack');
 });

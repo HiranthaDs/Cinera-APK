@@ -19,7 +19,7 @@
     <img src="https://img.shields.io/badge/Cloudflare-Workers-f38020?logo=cloudflare&logoColor=white" alt="Cloudflare Workers">
     <img src="https://img.shields.io/badge/Android_TV-optimized-3ddc84?logo=android&logoColor=white" alt="Android TV optimized">
     <img src="https://img.shields.io/badge/PWA-installable-ff3454" alt="Installable PWA">
-    <img src="https://img.shields.io/badge/tests-15_passing-13c99a" alt="15 tests passing">
+    <img src="https://img.shields.io/badge/tests-20_passing-13c99a" alt="20 tests passing">
   </p>
 </div>
 
@@ -92,7 +92,7 @@ The catalog uses TMDB metadata for discovery while keeping playback providers se
 | Playback | MP4, HLS, iframe sources, server failover, resume progress, Data Saver |
 | Player tools | Start Over, sleep timer, Picture-in-Picture, autoplay next, sharing, shortcuts |
 | Personal | Watchlist, editable history, playback progress, local preferences |
-| TV | Compact ten-foot layout, spatial focus navigation, legacy Android remote keys |
+| TV | Compact ten-foot layout, spatial focus navigation, Android/LG/Tizen remote keys, legacy browser fallback |
 | Phone remote | QR pairing, trackpad, cursor, focus gestures, keyboard, haptics, playback controls |
 | PWA | Installable manifest, offline shell, cache rotation, mobile home-screen support |
 
@@ -226,7 +226,7 @@ npm run validate
 
 The validation pipeline checks Worker syntax, runs deterministic tests, builds the production client and Worker bundles, validates asset routing, and performs a Wrangler deployment dry-run.
 
-Current suite: **15 passing tests** covering API behavior, source failover, Android TV detection, legacy remote keys, gesture classification, acceleration, pointer clamping, and remote route validation.
+Current suite: **20 passing tests** covering API behavior, source failover, Android/LG TV detection, legacy remote keys, native HLS/fullscreen compatibility, CSP-safe legacy loading, gesture classification, acceleration, pointer clamping, and remote route validation.
 
 ## Deployment
 

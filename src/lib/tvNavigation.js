@@ -1,29 +1,32 @@
+import {exitFullscreen,fullscreenElement} from './mediaCompat.js';
+
 const FOCUSABLE='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
-const TV_USER_AGENT=/Android TV|GoogleTV|SMART-TV|HbbTV|NetCast|Web0S|Tizen|BRAVIA|SHIELD Android TV|AFT[A-Z0-9]+|CrKey|Roku/i;
+const TV_USER_AGENT=/Android TV|GoogleTV|SMART[- ]?TV|SmartTV|HbbTV|NetCast|Web0S|webOS|Tizen|BRAVIA|SHIELD|AFT[A-Z0-9]+|CrKey|Roku|MIBOX|MiTV|Mi TV|TV Box|TV Stick/i;
 const REMOTE_KEYS={
   4:'BrowserBack',13:'Enter',19:'ArrowUp',20:'ArrowDown',21:'ArrowLeft',22:'ArrowRight',23:'Enter',
-  37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',415:'MediaPlay',
+  37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',415:'MediaPlay',461:'BrowserBack',10009:'BrowserBack',
+};
+const REMOTE_KEY_NAMES={
+  Left:'ArrowLeft',Right:'ArrowRight',Up:'ArrowUp',Down:'ArrowDown',
+  Select:'Enter',Accept:'Enter',OK:'Enter',
+  Back:'BrowserBack',Return:'BrowserBack',GoBack:'BrowserBack',XF86Back:'BrowserBack',
 };
 let initialized=false;
 
 export const normalizeRemoteKey=event=>{
   const key=event?.key;
   if(key&&key!=='Unidentified'){
-    if(key==='Left')return 'ArrowLeft';
-    if(key==='Right')return 'ArrowRight';
-    if(key==='Up')return 'ArrowUp';
-    if(key==='Down')return 'ArrowDown';
-    if(key==='Select'||key==='Accept')return 'Enter';
-    if(key==='GoBack'||key==='Escape')return key==='GoBack'?'BrowserBack':'Escape';
-    return key;
+    return REMOTE_KEY_NAMES[key]||key;
   }
   return REMOTE_KEYS[event?.keyCode||event?.which]||'';
 };
 
-export const detectTvIdentity=({userAgent='',tvQuery=false}={})=>tvQuery||TV_USER_AGENT.test(userAgent);
+const androidLeanbackFallback=({userAgent='',width=0,height=0,touchPoints=0})=>/Android/i.test(userAgent)&&touchPoints===0&&width>=800&&width>height*1.35;
 
-export const detectTvDevice=({userAgent='',width=0,height=0,coarse=false,tvQuery=false}={})=>{
-  if(detectTvIdentity({userAgent,tvQuery}))return true;
+export const detectTvIdentity=({userAgent='',width=0,height=0,touchPoints=0,tvQuery=false}={})=>tvQuery||TV_USER_AGENT.test(userAgent)||androidLeanbackFallback({userAgent,width,height,touchPoints});
+
+export const detectTvDevice=({userAgent='',width=0,height=0,coarse=false,touchPoints=0,tvQuery=false}={})=>{
+  if(detectTvIdentity({userAgent,width,height,touchPoints,tvQuery}))return true;
   return coarse&&width>=800&&width>height*1.35;
 };
 
@@ -38,14 +41,38 @@ const onScreen=element=>{
   return rect.bottom>0&&rect.right>0&&rect.top<window.innerHeight&&rect.left<window.innerWidth;
 };
 
+const focusAndReveal=(element,smooth=false)=>{
+  if(!element)return;
+  try{element.focus({preventScroll:true});}catch{element.focus();}
+  try{element.scrollIntoView({block:'nearest',inline:'nearest',behavior:smooth?'smooth':'auto'});}catch{element.scrollIntoView(false);}
+};
+
+const navigationRoot=()=>document.querySelector('[role="dialog"][aria-modal="true"]')||document.querySelector('.menu-panel.is-open')||document;
+const focusCandidates=root=>[...root.querySelectorAll(FOCUSABLE)].filter(element=>visible(element)&&!element.matches('.skip-link'));
+
+const handleRemoteBack=()=>{
+  if(fullscreenElement(document)){
+    exitFullscreen(document).catch(()=>{});
+    return true;
+  }
+  const dialog=document.querySelector('[role="dialog"][aria-modal="true"]');
+  const close=dialog?.querySelector('[aria-label^="Close"],.search-cancel,.filter-close,.shortcut-close');
+  if(close){close.click();return true;}
+  const expanded=document.querySelector('[aria-expanded="true"][aria-controls]');
+  if(expanded){expanded.click();return true;}
+  if(window.location.pathname!=='/'&&window.history.length>1){window.history.back();return true;}
+  return false;
+};
+
 export function initializeTvNavigation(){
   if(initialized||typeof window==='undefined')return;
   initialized=true;
   const applyTvClass=()=>{
     const tvQuery=new URLSearchParams(window.location.search).get('tv')==='1';
     const coarse=window.matchMedia?.('(hover: none) and (pointer: coarse)').matches||false;
-    const tvIdentity=detectTvIdentity({userAgent:navigator.userAgent,tvQuery});
-    const isTv=detectTvDevice({userAgent:navigator.userAgent,width:window.innerWidth,height:window.innerHeight,coarse,tvQuery});
+    const device={userAgent:navigator.userAgent,width:window.innerWidth,height:window.innerHeight,coarse,touchPoints:navigator.maxTouchPoints||0,tvQuery};
+    const tvIdentity=detectTvIdentity(device);
+    const isTv=detectTvDevice(device);
     document.documentElement.classList.toggle('tv-ui',isTv);
     document.documentElement.classList.toggle('tv-device',tvIdentity);
   };
@@ -55,22 +82,32 @@ export function initializeTvNavigation(){
   window.addEventListener('keydown',event=>{
     const key=normalizeRemoteKey(event);
     document.documentElement.classList.add('remote-input');
+    if(key==='BrowserBack'){
+      if(handleRemoteBack())event.preventDefault();
+      return;
+    }
     if(key==='Enter'&&(!event.key||event.key==='Unidentified')&&document.activeElement?.matches?.('button,a[href]')){
       event.preventDefault();
       document.activeElement.click();
       return;
     }
+    if(key==='Enter'&&(!document.activeElement||document.activeElement===document.body)){
+      const root=navigationRoot();
+      const candidates=focusCandidates(root);
+      const first=root.querySelector('[data-tv-autofocus]')||candidates.find(onScreen)||candidates[0];
+      if(first){event.preventDefault();focusAndReveal(first);}
+      return;
+    }
     if(event.defaultPrevented||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(key))return;
     const active=document.activeElement;
     if(active?.matches('input,select,textarea,[contenteditable="true"]')||active?.closest('[data-native-arrows="true"]'))return;
-    const navigationRoot=document.querySelector('[role="dialog"][aria-modal="true"]')||document.querySelector('.menu-panel.is-open')||document;
-    const candidates=[...navigationRoot.querySelectorAll(FOCUSABLE)].filter(element=>visible(element)&&!element.matches('.skip-link'));
+    const root=navigationRoot();
+    const candidates=focusCandidates(root);
     if(!candidates.length)return;
     if(!active||!candidates.includes(active)){
       event.preventDefault();
-      const first=navigationRoot.querySelector('[data-tv-autofocus]')||candidates.find(onScreen)||candidates[0];
-      first.focus({preventScroll:true});
-      first.scrollIntoView({block:'nearest',inline:'nearest'});
+      const first=root.querySelector('[data-tv-autofocus]')||candidates.find(onScreen)||candidates[0];
+      focusAndReveal(first);
       return;
     }
     const origin=active.getBoundingClientRect();
@@ -90,8 +127,7 @@ export function initializeTvNavigation(){
     }
     if(!best)return;
     event.preventDefault();
-    best.focus({preventScroll:true});
     const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    best.scrollIntoView({block:'nearest',inline:'nearest',behavior:reduced?'auto':'smooth'});
+    focusAndReveal(best,!reduced);
   });
 }
