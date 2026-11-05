@@ -1,7 +1,9 @@
-const VERSION='cinera-v4-trackpad-remote';
-const SHELL_CACHE=`${VERSION}-shell`;
-const DATA_CACHE=`${VERSION}-data`;
-const APP_SHELL=[
+// This file is copied directly to the build and is not transformed by Vite.
+// Keep it compatible with the same older TV browsers as the legacy app bundle.
+var VERSION='cinera-v5-tv-playback';
+var SHELL_CACHE=VERSION+'-shell';
+var DATA_CACHE=VERSION+'-data';
+var APP_SHELL=[
   '/',
   '/manifest.webmanifest',
   '/favicon.svg',
@@ -12,51 +14,87 @@ const APP_SHELL=[
   '/fonts/inter-semibold.ttf',
 ];
 
-self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(SHELL_CACHE).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
+self.addEventListener('install',function(event){
+  event.waitUntil(caches.open(SHELL_CACHE).then(function(cache){
+    return cache.addAll(APP_SHELL);
+  }).then(function(){
+    return self.skipWaiting();
+  }));
 });
 
-self.addEventListener('activate',event=>{
+self.addEventListener('activate',function(event){
   event.waitUntil(Promise.all([
-    caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('cinera-')&&!key.startsWith(VERSION)).map(key=>caches.delete(key)))),
+    caches.keys().then(function(keys){
+      return Promise.all(keys.filter(function(key){
+        return key.startsWith('cinera-')&&!key.startsWith(VERSION);
+      }).map(function(key){
+        return caches.delete(key);
+      }));
+    }),
     self.clients.claim(),
   ]));
 });
 
-async function trimCache(cacheName,maxEntries){
-  const cache=await caches.open(cacheName);
-  const keys=await cache.keys();
-  await Promise.all(keys.slice(0,Math.max(0,keys.length-maxEntries)).map(key=>cache.delete(key)));
+function trimCache(cacheName,maxEntries){
+  return caches.open(cacheName).then(function(cache){
+    return cache.keys().then(function(keys){
+      return Promise.all(keys.slice(0,Math.max(0,keys.length-maxEntries)).map(function(key){
+        return cache.delete(key);
+      }));
+    });
+  });
 }
 
-async function networkFirst(request,cacheName,fallback){
-  const cache=await caches.open(cacheName);
-  try{
-    const response=await fetch(request);
-    if(response.ok){
-      await cache.put(request,response.clone());
-      await trimCache(cacheName,60);
-    }
-    return response;
-  }catch{
-    return (await cache.match(request))||(fallback?await caches.match(fallback):undefined)||new Response(JSON.stringify({error:'You are offline and this content is not cached yet.'}),{status:503,headers:{'Content-Type':'application/json; charset=utf-8'}});
-  }
+function offlineResponse(){
+  return new Response(JSON.stringify({error:'You are offline and this content is not cached yet.'}),{
+    status:503,
+    headers:{'Content-Type':'application/json; charset=utf-8'},
+  });
 }
 
-async function staleWhileRevalidate(request){
-  const cache=await caches.open(SHELL_CACHE);
-  const cached=await cache.match(request);
-  const network=fetch(request).then(response=>{
-    if(response.ok)cache.put(request,response.clone());
-    return response;
-  }).catch(()=>cached);
-  return cached||network;
+function cachedFallback(cache,request,fallback){
+  return cache.match(request).then(function(cached){
+    if(cached)return cached;
+    if(!fallback)return offlineResponse();
+    return caches.match(fallback).then(function(shell){
+      return shell||offlineResponse();
+    });
+  });
 }
 
-self.addEventListener('fetch',event=>{
-  const {request}=event;
+function networkFirst(request,cacheName,fallback){
+  return caches.open(cacheName).then(function(cache){
+    return fetch(request).then(function(response){
+      if(!response.ok)return response;
+      return cache.put(request,response.clone()).then(function(){
+        return trimCache(cacheName,60);
+      }).then(function(){
+        return response;
+      });
+    }).catch(function(){
+      return cachedFallback(cache,request,fallback);
+    });
+  });
+}
+
+function staleWhileRevalidate(request){
+  return caches.open(SHELL_CACHE).then(function(cache){
+    return cache.match(request).then(function(cached){
+      var network=fetch(request).then(function(response){
+        if(response.ok)cache.put(request,response.clone()).catch(function(){});
+        return response;
+      }).catch(function(){
+        return cached||offlineResponse();
+      });
+      return cached||network;
+    });
+  });
+}
+
+self.addEventListener('fetch',function(event){
+  var request=event.request;
   if(request.method!=='GET')return;
-  const url=new URL(request.url);
+  var url=new URL(request.url);
   if(url.origin!==self.location.origin)return;
   if(url.pathname.startsWith('/api/')){
     event.respondWith(networkFirst(request,DATA_CACHE));
@@ -66,9 +104,9 @@ self.addEventListener('fetch',event=>{
     event.respondWith(networkFirst(request,SHELL_CACHE,'/'));
     return;
   }
-  if(['script','style','font','image','manifest'].includes(request.destination))event.respondWith(staleWhileRevalidate(request));
+  if(['script','style','font','image','manifest'].indexOf(request.destination)!==-1)event.respondWith(staleWhileRevalidate(request));
 });
 
-self.addEventListener('message',event=>{
-  if(event.data?.type==='SKIP_WAITING')self.skipWaiting();
+self.addEventListener('message',function(event){
+  if(event.data&&event.data.type==='SKIP_WAITING')self.skipWaiting();
 });
