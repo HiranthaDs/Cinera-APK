@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {embedUrlWithProgress,parseEmbedPlayerMessage} from '../src/lib/embedPlayer.js';
+import {embedUrlWithProgress,parseEmbedPlayerMessage,shouldUseFullPagePlayer} from '../src/lib/embedPlayer.js';
 
 test('normalizes the current wrapped Vidy playback protocol',()=>{
   const message=JSON.stringify({type:'PLAYER_EVENT',data:{event:'timeupdate',timestamp:42.8,duration:120}});
@@ -16,4 +16,10 @@ test('keeps compatibility with legacy flat embed events',()=>{
 test('adds or replaces a safe integer resume position',()=>{
   assert.equal(embedUrlWithProgress('https://www.vidy.st/movie/315162?autoplay=true',91.9),'https://www.vidy.st/movie/315162?autoplay=true&progress=91');
   assert.equal(embedUrlWithProgress('https://www.vidy.st/movie/315162?progress=4',12),'https://www.vidy.st/movie/315162?progress=12');
+});
+
+test('keeps Vidy embedded on PC and reserves full-page playback for confirmed TVs',()=>{
+  assert.equal(shouldUseFullPagePlayer('iframe',false),false);
+  assert.equal(shouldUseFullPagePlayer('iframe',true),true);
+  assert.equal(shouldUseFullPagePlayer('video',true),false);
 });

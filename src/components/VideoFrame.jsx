@@ -1,15 +1,17 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Clapperboard,ExternalLink,Play,RefreshCcw,ShieldAlert} from 'lucide-react';
 import PlaybackLoading from './PlaybackLoading';
-import {embedUrlWithProgress,parseEmbedPlayerMessage} from '../lib/embedPlayer';
+import {embedUrlWithProgress,parseEmbedPlayerMessage,shouldUseFullPagePlayer} from '../lib/embedPlayer';
 import {nativeHlsType,toggleFullscreen as toggleMediaFullscreen} from '../lib/mediaCompat';
 import {normalizeRemoteKey} from '../lib/tvNavigation';
 
 const LOAD_TIMEOUT=25000;
 
 export default function VideoFrame({source,resume=0,onProgress=()=>{},poster,onStateChange=()=>{},dataSaver=false}){
-  const tvMode=typeof document!=='undefined'&&document.documentElement.classList.contains('tv-ui');
-  const tvExternal=source?.type==='iframe'&&tvMode;
+  // A wide touch PC can use the ten-foot layout, but only a confirmed TV
+  // should leave the embedded player for the more compatible full-page flow.
+  const confirmedTv=typeof document!=='undefined'&&document.documentElement.classList.contains('tv-device');
+  const tvExternal=shouldUseFullPagePlayer(source?.type,confirmedTv);
   const videoRef=useRef(null);
   const iframeRef=useRef(null);
   const shellRef=useRef(null);

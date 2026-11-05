@@ -23,3 +23,5 @@ export function embedUrlWithProgress(sourceUrl,resume=0){
   if(seconds>0)url.searchParams.set('progress',String(seconds));
   return url.toString();
 }
+
+export const shouldUseFullPagePlayer=(sourceType,isConfirmedTv)=>sourceType==='iframe'&&isConfirmedTv===true;

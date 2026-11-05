@@ -3,6 +3,7 @@ import {Link,NavLink,useLocation} from 'react-router-dom';
 import {Search,Heart,Film,Tv,Compass,House,Menu,X,ArrowUpRight,Play,Clapperboard,Download,CheckCircle2,Share2,Gamepad2} from 'lucide-react';
 import {useStore} from '../lib/store';
 import {usePwaInstall} from '../lib/pwa';
+import {shouldHideWatchHeader} from '../lib/headerVisibility';
 import SmartSearch from './SmartSearch';
 
 const links=[
@@ -15,11 +16,11 @@ const links=[
 
 function SiteHeader(){
   const location=useLocation();const {saved}=useStore();
-  const [searchOpen,setSearchOpen]=useState(false),[menuOpen,setMenuOpen]=useState(false),[scrolled,setScrolled]=useState(false);
+  const [searchOpen,setSearchOpen]=useState(false),[menuOpen,setMenuOpen]=useState(false),[scrolled,setScrolled]=useState(false),[watchHeaderHidden,setWatchHeaderHidden]=useState(false);
   const [installNote,setInstallNote]=useState('');
   const {canInstall,installed,isiOS,install}=usePwaInstall();
   const searchDialog=useRef(null),searchTrigger=useRef(null),menuTrigger=useRef(null);
-  useEffect(()=>{const update=()=>setScrolled(window.scrollY>22);update();window.addEventListener('scroll',update,{passive:true});return()=>window.removeEventListener('scroll',update);},[]);
+  useEffect(()=>{const update=()=>{setScrolled(window.scrollY>22);setWatchHeaderHidden(shouldHideWatchHeader(location.pathname,window.scrollY));};update();window.addEventListener('scroll',update,{passive:true});return()=>window.removeEventListener('scroll',update);},[location.pathname]);
   useEffect(()=>{setMenuOpen(false);setSearchOpen(false);},[location.pathname,location.search]);
   useEffect(()=>{document.body.classList.toggle('menu-is-open',menuOpen||searchOpen);return()=>document.body.classList.remove('menu-is-open');},[menuOpen,searchOpen]);
   useEffect(()=>{
@@ -51,7 +52,7 @@ function SiteHeader(){
     setInstallNote(isiOS?'Tap Share, then choose “Add to Home Screen”.':'Open your browser menu and choose “Install app” or “Add to Home screen”.');
   };
   return <>
-    <header className={`site-header ${scrolled?'header-scrolled':''}`} id="top"><div className="header-inner">
+    <header className={`site-header ${scrolled?'header-scrolled':''} ${watchHeaderHidden&&!menuOpen&&!searchOpen?'header-watch-hidden':''}`} id="top"><div className="header-inner">
       <Link to="/" className="brand" aria-label="Cinera home"><span className="brand-mark"><Play size={18} fill="currentColor"/></span><span className="brand-word">CINERA</span></Link>
       <div className="header-center"><span className="live-dot"/> CINEMA · EVERYWHERE</div>
       <div className="header-actions">
