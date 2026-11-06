@@ -5,6 +5,8 @@
   <p>Discover a title, choose a playback source, and control the room from your phone.</p>
 
   <p>
+    <a href="releases/Cinera-Android-TV.apk"><strong>Download APK v1.1.0</strong></a>
+    ·
     <a href="https://cinera-by-hich.hiranthadiass4.workers.dev/"><strong>Open the live app</strong></a>
     ·
     <a href="#quick-start">Run locally</a>
@@ -19,12 +21,96 @@
     <img src="https://img.shields.io/badge/Cloudflare-Workers-f38020?logo=cloudflare&logoColor=white" alt="Cloudflare Workers">
     <img src="https://img.shields.io/badge/Android_TV-optimized-3ddc84?logo=android&logoColor=white" alt="Android TV optimized">
     <img src="https://img.shields.io/badge/PWA-installable-ff3454" alt="Installable PWA">
-    <img src="https://img.shields.io/badge/tests-23_passing-13c99a" alt="23 tests passing">
+    <img src="https://img.shields.io/badge/release-v1.1.0-ff3454" alt="Release v1.1.0">
+    <img src="https://img.shields.io/badge/tests-32_passing-13c99a" alt="32 tests passing">
   </p>
 </div>
 
 <p align="center">
   <img src="docs/screenshots/home-desktop.png" alt="Cinera cinematic home page" width="100%">
+</p>
+
+## Download and verify the Android APK
+
+The APK committed to this repository is the same universal phone, tablet and Android TV build described by the source under [`android/`](android/). It is intentionally documented so you can inspect it before installing it.
+
+| Release fact | Value |
+| --- | --- |
+| APK | [`releases/Cinera-Android-TV.apk`](releases/Cinera-Android-TV.apk) |
+| Version | `1.1.0-debug` (`versionCode 2`) |
+| Android package | `com.hichweb.cinera.debug` |
+| Compatibility | Android 5.0+ (`minSdk 21`), targeted to Android 15 (`targetSdk 35`) |
+| Size | 28,113 bytes |
+| SHA-256 | `03AEDE72996D77BF2D6C9993953CCC15F59DA85B3D3731A908C782C6CEF7A56D` |
+| Signing | Android debug certificate; APK Signature Scheme v1 and v2 verified |
+| Live service | [`cinera-by-hich.hiranthadiass4.workers.dev`](https://cinera-by-hich.hiranthadiass4.workers.dev/) |
+
+Verify the downloaded file yourself in PowerShell:
+
+```powershell
+Get-FileHash .\Cinera-Android-TV.apk -Algorithm SHA256
+```
+
+With Android SDK Build Tools installed, you can also inspect its signature and manifest:
+
+```powershell
+apksigner verify --verbose --print-certs .\Cinera-Android-TV.apk
+aapt dump badging .\Cinera-Android-TV.apk
+```
+
+### What the APK can access
+
+| Permission | Why it exists |
+| --- | --- |
+| Internet | Loads the Cinera web interface, catalog artwork, metadata and configured playback sources. |
+| Network state | Detects connectivity and presents the retry screen when the service cannot load. |
+| Microphone | Optional voice search only. Android asks at runtime; denying it does not block browsing or playback. |
+
+The manifest does **not** request camera, contacts, SMS, phone, location, broad file-storage or accessibility permissions. See the exact declarations in [`AndroidManifest.xml`](android/app/src/main/AndroidManifest.xml) and the native behavior in [`MainActivity.java`](android/app/src/main/java/com/hichweb/cinera/MainActivity.java).
+
+### Trust and transparency
+
+- Cinera is a small native WebView shell around the public HTTPS app above; it requires an internet connection for the live catalog.
+- Watchlist, search history, preferences and playback progress stay in WebView local storage on the device. There is no Cinera user account or password collection.
+- Phone/TV remote messages pass through a temporary Cloudflare Durable Object WebSocket session and are relayed only between the paired screen and remote.
+- There is no custom advertising or analytics SDK in the APK. Cloudflare may process standard request metadata for hosting and operational logs.
+- External playback providers are separate services and may have their own content, advertising, privacy and licensing policies. Cinera labels external playback before opening it.
+- This APK is debug-signed for transparent sideload testing, not Play Store distribution. Android may show an “unknown source” warning; verify the checksum and source first. A production store release must use a private release key.
+
+Read the full [`Privacy notice`](PRIVACY.md), [`Security policy`](SECURITY.md), and [`Android build instructions`](android/README.md). Sideload only software you have reviewed and trust.
+
+## Real release screenshots
+
+These images were captured from the v1.1 build and its responsive release layouts. Live catalog titles and artwork can change as TMDB updates.
+
+<table>
+  <tr>
+    <th>Android phone home</th>
+    <th>Phone catalog</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/android-phone-home.png" alt="Cinera v1.1 running in an Android phone emulator" width="300"></td>
+    <td align="center"><img src="docs/screenshots/android-phone-catalog.png" alt="Cinera movie catalog at a 360 pixel phone viewport" width="300"></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/android-tablet-details.png" alt="Cinera title details on an Android tablet layout" width="720">
+</p>
+
+<table>
+  <tr>
+    <th>Android TV home — 1080p</th>
+    <th>Remote focus — 960×540 TV viewport</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/android-tv-home.png" alt="Cinera ten-foot home interface at 1920 by 1080" width="100%"></td>
+    <td><img src="docs/screenshots/android-tv-catalog-focus.png" alt="High contrast D-pad focus on the TV catalog filter" width="100%"></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/android-tv-player.png" alt="Cinera external-player prompt optimized for an Android TV remote" width="960">
 </p>
 
 ## The experience
@@ -92,7 +178,8 @@ The catalog uses TMDB metadata for discovery while keeping playback providers se
 | Playback | MP4, HLS, iframe sources, server failover, resume progress, Data Saver |
 | Player tools | Start Over, sleep timer, Picture-in-Picture, autoplay next, sharing, shortcuts |
 | Personal | Watchlist, editable history, playback progress, local preferences |
-| TV | Compact ten-foot layout, spatial focus navigation, Android/LG/Tizen remote keys, legacy browser fallback |
+| TV | Large ten-foot layout, spatial focus navigation, Android/LG/Tizen remote keys, legacy browser fallback |
+| Adaptive screens | Safe-area phone navigation, touch-friendly tablet grids, 960p/1080p TV scaling, short-screen player mode |
 | Phone remote | QR pairing, trackpad, cursor, focus gestures, keyboard, haptics, playback controls |
 | PWA | Installable manifest, offline shell, cache rotation, mobile home-screen support |
 
@@ -142,6 +229,19 @@ npm run dev
 ```
 
 Open <http://localhost:5173>. Without TMDB credentials, Cinera starts with a safe sample catalog so the complete interface remains testable.
+
+### Android and Android TV APK
+
+The repository now includes a universal native Android shell in [`android/`](android/README.md). It adds Android TV launcher support, D-pad and media-key handling, native Back behavior, fullscreen video, immersive mode, secure external-link routing, voice-search permission handling, and an offline recovery screen while retaining the deployed Worker API and phone-remote sessions.
+
+```powershell
+cd android
+.\gradlew.bat clean :app:assembleDebug
+```
+
+The debug build is signed automatically and can be sideloaded on both Android phones and Android TV devices. Version 1.1 adds device-specific phone, tablet and TV layouts plus primary-action remote autofocus. See [`android/README.md`](android/README.md) for ADB installation and production-signing instructions.
+
+The prepared v1.1 APK is available directly at [`releases/Cinera-Android-TV.apk`](releases/Cinera-Android-TV.apk).
 
 ### Local environment
 
@@ -228,7 +328,7 @@ npm run validate
 
 The validation pipeline checks Worker syntax, runs deterministic tests, builds the production client and Worker bundles, validates asset routing, and performs a Wrangler deployment dry-run.
 
-Current suite: **23 passing tests** covering API behavior, source failover, Vidy event/resume compatibility, Android/LG TV detection, legacy remote keys, native HLS/fullscreen compatibility, CSP-safe legacy loading, gesture classification, acceleration, pointer clamping, and remote route validation.
+Current suite: **32 passing tests** covering API behavior, source failover, Vidy event/resume compatibility, Android/LG TV detection, tablet separation, phone safe areas, TV grid and autofocus contracts, universal APK manifest requirements, legacy remote keys, native HLS/fullscreen compatibility, CSP-safe legacy loading, gesture classification, acceleration, pointer clamping, and remote route validation.
 
 ## Deployment
 
@@ -241,7 +341,7 @@ npm run deploy
 
 The deployment creates or updates the `cinera-by-hich` Worker. The QR remote uses the `RemoteSession` SQLite-backed Durable Object declared in `wrangler.jsonc`; Wrangler applies its initial migration during deployment.
 
-Store `TMDB_READ_ACCESS_TOKEN` in **Workers & Pages → Settings → Variables and Secrets**. The ignored local `.env` file may be used by the provided deploy script, but it must never be added to Git.
+Store `TMDB_READ_ACCESS_TOKEN` in **Workers & Pages → Settings → Variables and Secrets** or with `npx wrangler secret put TMDB_READ_ACCESS_TOKEN`. Local `.env` and `.dev.vars` files are ignored and must never be added to Git.
 
 ### Git-connected deployment
 

@@ -1,0 +1,6 @@
+# Copy this file to signing.properties and keep the real file private.
+# Paths are resolved relative to the android directory.
+storeFile=keystore/cinera-release.jks
+storePassword=replace-with-a-strong-password
+keyAlias=cinera
+keyPassword=replace-with-a-strong-password

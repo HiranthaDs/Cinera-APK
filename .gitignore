@@ -9,3 +9,10 @@ hich-reference-*.png
 .wrangler/
 .dev.vars*
 !.dev.vars.example
+android/.gradle/
+android/local.properties
+android/signing.properties
+android/keystore/
+android/app/build/
+releases/*.apk
+!releases/Cinera-Android-TV.apk

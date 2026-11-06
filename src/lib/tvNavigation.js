@@ -27,7 +27,12 @@ export const detectTvIdentity=({userAgent='',width=0,height=0,touchPoints=0,tvQu
 
 export const detectTvDevice=({userAgent='',width=0,height=0,coarse=false,touchPoints=0,tvQuery=false}={})=>{
   if(detectTvIdentity({userAgent,width,height,touchPoints,tvQuery}))return true;
-  return coarse&&width>=800&&width>height*1.35;
+  return coarse&&touchPoints===0&&width>=800&&width>height*1.35;
+};
+
+export const detectTabletDevice=({width=0,height=0,touchPoints=0,isTv=false}={})=>{
+  const shortSide=Math.min(width,height),longSide=Math.max(width,height);
+  return !isTv&&touchPoints>0&&shortSide>=600&&longSide>=800;
 };
 
 const visible=element=>{
@@ -73,8 +78,11 @@ export function initializeTvNavigation(){
     const device={userAgent:navigator.userAgent,width:window.innerWidth,height:window.innerHeight,coarse,touchPoints:navigator.maxTouchPoints||0,tvQuery};
     const tvIdentity=detectTvIdentity(device);
     const isTv=detectTvDevice(device);
+    const isTablet=detectTabletDevice({...device,isTv});
     document.documentElement.classList.toggle('tv-ui',isTv);
     document.documentElement.classList.toggle('tv-device',tvIdentity);
+    document.documentElement.classList.toggle('tablet-ui',isTablet);
+    document.documentElement.classList.toggle('phone-ui',!isTv&&!isTablet&&device.touchPoints>0);
   };
   applyTvClass();
   window.addEventListener('resize',applyTvClass,{passive:true});

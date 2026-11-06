@@ -1,0 +1,66 @@
+plugins {
+    id "com.android.application"
+}
+
+def defaultCineraUrl = "https://cinera-by-hich.hiranthadiass4.workers.dev/"
+def cineraUrl = (project.findProperty("CINERA_URL") ?: defaultCineraUrl).toString()
+def escapedCineraUrl = cineraUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+def signingPropertiesFile = rootProject.file("signing.properties")
+def signingProperties = new Properties()
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+
+android {
+    namespace "com.hichweb.cinera"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.hichweb.cinera"
+        minSdk 21
+        targetSdk 35
+        versionCode 2
+        versionName "1.1.0"
+        buildConfigField "String", "CINERA_URL", "\"${escapedCineraUrl}\""
+    }
+
+    signingConfigs {
+        if (signingPropertiesFile.exists()) {
+            release {
+                storeFile rootProject.file(signingProperties["storeFile"])
+                storePassword signingProperties["storePassword"]
+                keyAlias signingProperties["keyAlias"]
+                keyPassword signingProperties["keyPassword"]
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (signingPropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
